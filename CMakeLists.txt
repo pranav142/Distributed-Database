@@ -3,7 +3,11 @@ project(db)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(db main.cpp)
+add_executable(db main.cpp
+        DB.cpp
+        wol.cpp
+        wol.h
+)
 
 target_precompile_headers(db PRIVATE libs/httplib/httplib.h)
 
