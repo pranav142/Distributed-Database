@@ -17,6 +17,11 @@ set (RAFT_FILES raft/logs.cpp
         Google_tests/raft_logs_tests.cpp
         raft/persistent_state.cpp
         raft/persistent_state.h
+        raft/error_codes.h
+        raft/utils.cpp
+        raft/utils.h
+        Google_tests/raft_utils_tests.cpp
+        Google_tests/raft_persistent_state_tests.cpp
 )
 
 add_executable(db main.cpp
