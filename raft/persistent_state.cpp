@@ -13,7 +13,7 @@ raft::PersistentState::PersistentState(std::string log_file_path) : m_log_file_p
         return;
     }
 
-    // If we are unable to load state from the file we write to the file state with initial values
+    // If unable to load state from the file we write to the file state with initial values
     clear_file(log_file_path);
     if (save_state() != SUCCESS) {
         std::cerr << "Failed to save persistent state" << std::endl;
@@ -45,8 +45,9 @@ raft::ErrorCode raft::PersistentState::append_log(const std::string &entry) cons
     return append_to_file(m_log_file_path, serialize_log(log));
 }
 
+// Index starts at 1
 std::optional<raft::Log> raft::PersistentState::read_log(unsigned int index) const {
-    if (get_last_log_index() < index) {
+    if (get_last_log_index() < index || index <= 0) {
         return std::nullopt;
     }
 
@@ -55,6 +56,7 @@ std::optional<raft::Log> raft::PersistentState::read_log(unsigned int index) con
 
     while (std::getline(file, line)) {
         auto log = deserialize_log(line);
+        // Skip logs that can't be deserialized
         if (log == std::nullopt) {
             continue;
         }
@@ -109,6 +111,10 @@ raft::ErrorCode raft::PersistentState::load_state() {
 
     if (!std::getline(metadata_stream, header_str, ',') || !std::getline(metadata_stream, current_term_str, ',') || !std::getline(metadata_stream, voted_for_str, '\n')) {
         return FAILED_TO_PARSE_HEADER;
+    }
+
+    if (header_str != HEADER_INDICATOR) {
+        return INVALID_HEADER_INFO;
     }
 
     try {

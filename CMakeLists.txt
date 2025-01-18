@@ -22,6 +22,10 @@ set (RAFT_FILES raft/logs.cpp
         raft/utils.h
         Google_tests/raft_utils_tests.cpp
         Google_tests/raft_persistent_state_tests.cpp
+        raft/node.cpp
+        raft/node.h
+        raft/cluster.cpp
+        raft/cluster.h
 )
 
 add_executable(db main.cpp

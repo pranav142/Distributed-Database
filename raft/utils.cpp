@@ -79,7 +79,7 @@ raft::ErrorCode raft::append_to_file(const std::string &file_path, const std::st
         return FAILED_TO_OPEN_FILE;
     }
 
-   std::string content = value;
+    std::string content = value;
     if (!content.empty() && content.back() != '\n') {
         content += '\n'; // Add a newline if it's missing
     }
