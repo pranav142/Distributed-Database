@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include "cluster.h"
 #include <vector>
+#include "boost/asio.hpp"
 
 namespace raft {
     enum class ServerState : int {
@@ -19,7 +20,7 @@ namespace raft {
 
     class Node {
     public:
-        Node(unsigned int id, const ClusterMap &cluster);
+        Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io);
 
         ServerState get_server_state() const;
 
@@ -28,6 +29,19 @@ namespace raft {
         unsigned int get_commit_index() const;
 
         unsigned int get_last_applied_index() const;
+
+        void reset_election_timer();
+
+        void handle_election_timeout();
+
+        void start();
+
+    private:
+        void become_follower(unsigned int term);
+
+        void become_candidate();
+
+        void become_leader();
 
     private:
         unsigned int m_id;
@@ -43,6 +57,10 @@ namespace raft {
 
         // A map of ID's and corresponding IPs
         ClusterMap m_cluster;
+
+        // Timer Stuff
+        boost::asio::io_context& m_io;
+        boost::asio::steady_timer m_election_timer;
     };
 }
 

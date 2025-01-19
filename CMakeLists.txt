@@ -12,21 +12,22 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-set (RAFT_FILES raft/logs.cpp
+set(RAFT_FILES raft/logs.cpp
         raft/logs.h
-        Google_tests/raft_logs_tests.cpp
         raft/persistent_state.cpp
         raft/persistent_state.h
         raft/error_codes.h
         raft/utils.cpp
         raft/utils.h
-        Google_tests/raft_utils_tests.cpp
-        Google_tests/raft_persistent_state_tests.cpp
         raft/node.cpp
         raft/node.h
         raft/cluster.cpp
         raft/cluster.h
 )
+
+add_library(raft ${RAFT_FILES})
+
+target_include_directories(raft PRIVATE libs/asio/include)
 
 add_executable(db main.cpp
         DB.cpp
@@ -40,8 +41,12 @@ enable_testing()
 
 add_executable(
         GTests_run
-        ${RAFT_FILES}
+        Google_tests/raft_logs_tests.cpp
+        Google_tests/raft_utils_tests.cpp
+        Google_tests/raft_persistent_state_tests.cpp
 )
+
+target_link_libraries(GTests_run raft)
 
 target_include_directories(GTests_run PRIVATE raft)
 

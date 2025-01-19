@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <fstream>
 #include <vector>
+#include <random>
 
 // Value should have a new line character at the end
 // the line number starts at 1
@@ -86,4 +87,11 @@ raft::ErrorCode raft::append_to_file(const std::string &file_path, const std::st
     log_file << content;
     log_file.close();
     return SUCCESS;
+}
+
+int raft::generate_random_number(int min, int max) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(min, max); // Generate integers from 1 to 6 (inclusive)
+    return dist(gen);
 }

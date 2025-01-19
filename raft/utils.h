@@ -19,6 +19,8 @@ namespace raft {
     std::string get_last_line(const std::string &file_path);
 
     ErrorCode append_to_file(const std::string &file_path, const std::string &value);
+
+    int generate_random_number(int min, int max);
 }
 
 

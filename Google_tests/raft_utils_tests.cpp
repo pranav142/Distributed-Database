@@ -21,3 +21,8 @@ TEST(ReplaceLineTest, HandlesValidReplacement) {
 
     GTEST_ASSERT_EQ(line, "Goodbye World");
 }
+
+TEST (GenerateRandomNumber, HandlesValidMinMax) {
+    int random_num = raft::generate_random_number(150, 300);
+    GTEST_ASSERT_TRUE(random_num >= 150 && random_num <= 300);
+}
