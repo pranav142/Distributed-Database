@@ -5,20 +5,22 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include "persistent_state.h"
-#include <unordered_map>
-#include "cluster.h"
 #include <vector>
-#include "boost/asio.hpp"
+#include <boost/asio.hpp>
+#include "cluster.h"
+#include "persistent_state.h"
 
 namespace raft {
+    constexpr int ELECTION_TIMER_MIN_MS = 150;
+    constexpr int ELECTION_TIMER_MAX_MS = 300;
+
     enum class ServerState : int {
         FOLLOWER = 0,
         CANDIDATE,
         LEADER,
     };
 
-    class Node {
+   class Node {
     public:
         Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io);
 
@@ -35,6 +37,8 @@ namespace raft {
         void handle_election_timeout();
 
         void start();
+
+        void stop();
 
     private:
         void become_follower(unsigned int term);
@@ -62,6 +66,8 @@ namespace raft {
         boost::asio::io_context& m_io;
         boost::asio::steady_timer m_election_timer;
     };
+
+    std::string server_state_to_str(ServerState state);
 }
 
 

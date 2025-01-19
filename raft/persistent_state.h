@@ -33,6 +33,8 @@ namespace raft {
 
         void set_current_term(unsigned int term);
 
+        void increment_term();
+
         [[nodiscard]] ErrorCode save_state() const;
 
         ErrorCode load_state();

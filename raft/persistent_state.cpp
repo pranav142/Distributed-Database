@@ -91,6 +91,10 @@ void raft::PersistentState::set_current_term(unsigned int term) {
     }
 }
 
+void raft::PersistentState::increment_term() {
+    set_current_term(get_current_term() + 1);
+}
+
 raft::ErrorCode raft::PersistentState::save_state() const {
     std::stringstream ss;
     ss << "Header," << m_current_term << "," << m_voted_for << "\n";
