@@ -36,11 +36,20 @@ void raft::Node::start() {
     reset_election_timer();
 }
 
+// TODO: Think about thread safety of modifying persistent state
+// TODO: If there is a rpc server, client, and timers on seperate threads that are modifying persistent state we can run into race conditions
 void raft::Node::handle_election_timeout() {
-    std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.get_current_term() << std::endl;
+    // When an election timeout occurs (Leaders do not have election timeouts):
+    // 1. increment the term
+    // 2. vote for self
+    // 3. move to candidate state
+    // 4. reset election timer
+    std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.get_current_term()
+            << std::endl;
     if (m_server_state == ServerState::FOLLOWER || m_server_state == ServerState::CANDIDATE) {
-        m_server_state = ServerState::CANDIDATE;
         m_state.increment_term();
+        m_state.set_voted_for(m_id);
+        become_candidate();
         reset_election_timer();
     }
 }

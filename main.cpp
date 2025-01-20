@@ -5,11 +5,6 @@
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-
-    boost::asio::io_context io;
-    raft::ANode node(io);
-    io.run();
-
     //httplib::Server svr;
     //db::DB db;
 
