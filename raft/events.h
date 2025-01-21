@@ -7,10 +7,12 @@
 
 #include <variant>
 
+struct QuitEvent {
+};
+
 struct ElectionTimeout {
 };
 
-typedef std::variant<ElectionTimeout>
-Event;
+typedef std::variant<ElectionTimeout, QuitEvent> Event;
 
 #endif //EVENTS_H

@@ -61,7 +61,7 @@ void raft::Node::shut_down_election_timer() {
 }
 
 void raft::Node::stop() {
-    m_running = false;
+    m_event_queue.push(QuitEvent{});
     shut_down_election_timer();
 }
 
@@ -90,6 +90,7 @@ void raft::Node::become_leader() {
     m_server_state = ServerState::LEADER;
 }
 
+// Blocking Call that causes the node to run
 void raft::Node::run() {
     m_running = true;
 
@@ -106,6 +107,8 @@ void raft::Node::run() {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, ElectionTimeout>) {
                     handle_election_timeout();
+                } else if constexpr (std::is_same_v<T, QuitEvent>) {
+                    m_running = false;
                 }
             }, event);
         }
