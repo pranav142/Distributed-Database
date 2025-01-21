@@ -18,14 +18,16 @@ namespace raft {
 
         void push(T entry) {
             {
-                std::lock_guard lock(m_lock);
+                std::scoped_lock lock(m_lock);
                 m_queue.push(std::move(entry));
             }
             m_cv.notify_one();
         }
 
+        // This is a blocking pop that will put the thread to sleep until data is available
         T pop() {
             std::unique_lock lock(m_lock);
+            // Wait until data is in the queue
             m_cv.wait(lock, [this] { return !m_queue.empty(); });
             T entry = std::move(m_queue.front());
             m_queue.pop();

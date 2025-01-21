@@ -8,6 +8,8 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include "cluster.h"
+#include "events.h"
+#include "event_queue.h"
 #include "persistent_state.h"
 
 namespace raft {
@@ -20,7 +22,7 @@ namespace raft {
         LEADER,
     };
 
-   class Node {
+    class Node {
     public:
         Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io);
 
@@ -36,11 +38,16 @@ namespace raft {
 
         void handle_election_timeout();
 
-        void start();
+        void run();
 
         void stop();
 
     private:
+
+        void initialize();
+
+        void election_timeout_cb();
+
         void become_follower(unsigned int term);
 
         void become_candidate();
@@ -63,8 +70,12 @@ namespace raft {
         ClusterMap m_cluster;
 
         // Timer Stuff
-        boost::asio::io_context& m_io;
+        boost::asio::io_context &m_io;
         boost::asio::steady_timer m_election_timer;
+
+        EventQueue<Event> m_event_queue;
+        bool m_running = false;
+        boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     };
 
     std::string server_state_to_str(ServerState state);

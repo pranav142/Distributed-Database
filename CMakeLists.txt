@@ -24,6 +24,7 @@ set(RAFT_FILES
         raft/cluster.cpp
         raft/cluster.h
         raft/event_queue.h
+        raft/events.h
 )
 
 add_library(raft
