@@ -10,7 +10,8 @@ raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_con
     m_state("log_" + std::to_string(id) + ".txt"),
     m_io(io),
     m_election_timer(io),
-    m_strand(boost::asio::make_strand(io)) {
+    m_strand(boost::asio::make_strand(io)),
+    m_work_guard(boost::asio::make_work_guard(io)){
 }
 
 raft::ServerState raft::Node::get_server_state() const {
@@ -38,8 +39,8 @@ void raft::Node::reset_election_timer() {
         m_election_timer.expires_after(boost::asio::chrono::milliseconds(random_time_ms));
         m_election_timer.async_wait([this](const boost::system::error_code &ec) {
             if (!ec) {
+                std::cout << "event pushed" << std::endl;
                 m_event_queue.push(ElectionTimeout{});
-                // reset_election_timer();
             } else if (ec != boost::asio::error::operation_aborted) {
                 std::cout << "Election timer error: " << ec.message() << std::endl;
             }
@@ -51,10 +52,17 @@ void raft::Node::initialize() {
     reset_election_timer();
 }
 
-// TODO: Fix This
+void raft::Node::shut_down_election_timer() {
+    boost::asio::post(m_io, [this]() {
+        m_election_timer.cancel();
+        m_work_guard.reset();
+        m_io.stop();
+    });
+}
+
 void raft::Node::stop() {
     m_running = false;
-    m_election_timer.cancel();
+    shut_down_election_timer();
 }
 
 void raft::Node::handle_election_timeout() {
@@ -73,11 +81,6 @@ void raft::Node::handle_election_timeout() {
     }
 }
 
-void raft::Node::election_timeout_cb() {
-    m_event_queue.push(ElectionTimeout{});
-    // reset_election_timer();
-}
-
 void raft::Node::become_follower(unsigned int term) {
     m_server_state = ServerState::FOLLOWER;
     m_state.set_current_term(term);
@@ -91,26 +94,24 @@ void raft::Node::run() {
     m_running = true;
 
     initialize();
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
-         work_guard = boost::asio::make_work_guard(m_io);
 
     std::thread timer_thread([this] {
         m_io.run();
     });
 
-    // TODO: Figure out how to run a seperate io thread
-    while (m_running) {
-        Event event = m_event_queue.pop();
-        std::visit([this](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ElectionTimeout>) {
-                handle_election_timeout();
-            }
-        }, event);
-    }
+    std::thread event_thread([this] {
+        while (m_running) {
+            Event event = m_event_queue.pop();
+            std::visit([this](auto &&arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, ElectionTimeout>) {
+                    handle_election_timeout();
+                }
+            }, event);
+        }
+    });
 
-    work_guard.reset();
-    m_io.stop();
+    event_thread.join();
     timer_thread.join();
 }
 

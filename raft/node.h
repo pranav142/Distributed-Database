@@ -13,8 +13,8 @@
 #include "persistent_state.h"
 
 namespace raft {
-    constexpr int ELECTION_TIMER_MIN_MS = 150;
-    constexpr int ELECTION_TIMER_MAX_MS = 300;
+    constexpr int ELECTION_TIMER_MIN_MS = 1500;
+    constexpr int ELECTION_TIMER_MAX_MS = 3000;
 
     enum class ServerState : int {
         FOLLOWER = 0,
@@ -46,7 +46,7 @@ namespace raft {
 
         void initialize();
 
-        void election_timeout_cb();
+        void shut_down_election_timer();
 
         void become_follower(unsigned int term);
 
@@ -76,6 +76,7 @@ namespace raft {
         EventQueue<Event> m_event_queue;
         bool m_running = false;
         boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
     };
 
     std::string server_state_to_str(ServerState state);
