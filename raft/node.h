@@ -36,8 +36,6 @@ namespace raft {
 
         void reset_election_timer();
 
-        void handle_election_timeout();
-
         void run();
 
         void stop();
@@ -54,6 +52,10 @@ namespace raft {
 
         void become_leader();
 
+        void run_follower_loop();
+
+        void run_candidate_loop();
+
     private:
         unsigned int m_id;
         unsigned int m_commit_index = 0;
@@ -62,20 +64,22 @@ namespace raft {
         ServerState m_server_state = ServerState::FOLLOWER;
         PersistentState m_state;
 
-        // Only use din leader configuration
+        // Only used in leader state
         std::vector<unsigned int> m_next_index;
         std::vector<unsigned int> m_match_index;
 
         // A map of ID's and corresponding IPs
         ClusterMap m_cluster;
 
+        EventQueue<Event> m_event_queue;
+        bool m_running = false;
+
         // Timer Stuff
         boost::asio::io_context &m_io;
         boost::asio::steady_timer m_election_timer;
 
-        EventQueue<Event> m_event_queue;
-        bool m_running = false;
-        boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+       boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+        // Work guard is needed to keep the io context running even when there is no work
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
     };
 

@@ -11,7 +11,7 @@ TEST(ElectionTest, SuccessfulCandidateTransition) {
     raft::Node node(1, {}, io);
 
     std::thread stop_thread([&node]() {
-        sleep(raft::ELECTION_TIMER_MAX_MS / 1000);
+        sleep(5 * raft::ELECTION_TIMER_MAX_MS / 1000);
         node.stop();
     });
 
