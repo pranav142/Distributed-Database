@@ -11,6 +11,7 @@
 #include "events.h"
 #include "event_queue.h"
 #include "persistent_state.h"
+#include "client.h"
 
 namespace raft {
     constexpr int ELECTION_TIMER_MIN_MS = 1500;
@@ -24,7 +25,7 @@ namespace raft {
 
     class Node {
     public:
-        Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io);
+        Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io, std::unique_ptr<Client> client);
 
         ServerState get_server_state() const;
 
@@ -41,7 +42,6 @@ namespace raft {
         void stop();
 
     private:
-
         void initialize();
 
         void shut_down_election_timer();
@@ -78,9 +78,11 @@ namespace raft {
         boost::asio::io_context &m_io;
         boost::asio::steady_timer m_election_timer;
 
-       boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+        boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
         // Work guard is needed to keep the io context running even when there is no work
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
+
+        std::unique_ptr<Client> m_client;
     };
 
     std::string server_state_to_str(ServerState state);

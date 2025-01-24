@@ -5,13 +5,13 @@
 #include <functional>
 #include "utils.h"
 
-raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io) : m_id(id),
+raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io, std::unique_ptr<Client> client) : m_id(id),
     m_cluster(cluster),
     m_state("log_" + std::to_string(id) + ".txt"),
     m_io(io),
     m_election_timer(io),
     m_strand(boost::asio::make_strand(io)),
-    m_work_guard(boost::asio::make_work_guard(io)) {
+    m_work_guard(boost::asio::make_work_guard(io)), m_client(std::move(client)) {
 }
 
 raft::ServerState raft::Node::get_server_state() const {
