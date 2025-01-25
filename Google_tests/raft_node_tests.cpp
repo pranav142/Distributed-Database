@@ -3,6 +3,7 @@
 //
 
 #include <gtest/gtest.h>
+
 #include "node.h"
 
 TEST(ElectionTest, SuccessfulCandidateTransition) {
@@ -11,7 +12,7 @@ TEST(ElectionTest, SuccessfulCandidateTransition) {
     raft::Node node(1, {}, io, nullptr);
 
     // Stops the node after 5 times the maximum election timeout
-    // This should mean there are 5 election timeout events but
+    // This should mean there are 5 election timeout events
     std::thread stop_thread([&node]() {
         sleep(5 * raft::ELECTION_TIMER_MAX_MS / 1000);
         node.stop();

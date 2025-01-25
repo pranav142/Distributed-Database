@@ -5,13 +5,15 @@
 #include <functional>
 #include "utils.h"
 
-raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io, std::unique_ptr<Client> client) : m_id(id),
-    m_cluster(cluster),
-    m_state("log_" + std::to_string(id) + ".txt"),
-    m_io(io),
-    m_election_timer(io),
-    m_strand(boost::asio::make_strand(io)),
-    m_work_guard(boost::asio::make_work_guard(io)), m_client(std::move(client)) {
+raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
+                 std::unique_ptr<Client> client) : m_id(id),
+                                                   m_cluster(cluster),
+                                                   m_state("log_" + std::to_string(id) + ".txt"),
+                                                   m_io(io),
+                                                   m_election_timer(io),
+                                                   m_strand(boost::asio::make_strand(io)),
+                                                   m_work_guard(boost::asio::make_work_guard(io)),
+                                                   m_client(std::move(client)) {
 }
 
 raft::ServerState raft::Node::get_server_state() const {
@@ -55,14 +57,14 @@ void raft::Node::initialize() {
 void raft::Node::shut_down_election_timer() {
     boost::asio::post(m_io, [this]() {
         m_election_timer.cancel();
-        m_work_guard.reset();
-        m_io.stop();
     });
 }
 
 void raft::Node::stop() {
     m_event_queue.push(QuitEvent{});
     shut_down_election_timer();
+    m_work_guard.reset();
+    m_io.stop();
 }
 
 void raft::Node::become_follower(unsigned int term) {
@@ -146,6 +148,9 @@ void raft::Node::run() {
                 }
                 case ServerState::CANDIDATE: {
                     run_candidate_loop();
+                    break;
+                }
+                case ServerState::LEADER: {
                     break;
                 }
             }
