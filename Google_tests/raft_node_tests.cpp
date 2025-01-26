@@ -2,13 +2,16 @@
 // Created by pknadimp on 1/19/25.
 //
 
+#include <httplib.h>
 #include <gtest/gtest.h>
 
 #include "node.h"
+#include "client.h"
 
 TEST(ElectionTest, SuccessfulCandidateTransition) {
     // This test checks that after one election timeout the node is in the candidate state
     boost::asio::io_context io;
+
     raft::Node node(1, {}, io, nullptr);
 
     // Stops the node after 5 times the maximum election timeout
