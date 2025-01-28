@@ -13,6 +13,7 @@
 #include "persistent_state.h"
 #include "client.h"
 
+
 namespace raft {
     constexpr int ELECTION_TIMER_MIN_MS = 1500;
     constexpr int ELECTION_TIMER_MAX_MS = 3000;

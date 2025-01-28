@@ -9,7 +9,7 @@
 #include "client.h"
 
 TEST(ElectionTest, SuccessfulCandidateTransition) {
-    // This test checks that after one election timeout the node is in the candidate state
+    // This test checks that after election timeouts the node is in the candidate state
     boost::asio::io_context io;
 
     raft::Node node(1, {}, io, nullptr);
