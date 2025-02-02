@@ -20,7 +20,7 @@ namespace raft {
         // This method is responsible for requesting a vote from peer
         // Once the request has been processed the callback will then
         // be invoked; this allows for simple asynchronous programming
-        virtual ErrorCode request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term,
+        virtual void request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term,
                                        std::function<void(int term, bool vote_granted)> callback) = 0;
 
         // Create a method to cancel any outgoing requests

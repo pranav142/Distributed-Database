@@ -1,13 +1,6 @@
 cmake_minimum_required(VERSION 3.29)
 project(db LANGUAGES CXX)
 
-# set(gRPC_BUILD_CPP_PLUGIN ON)
-# set(gRPC_PROTOBUF_PROVIDER package) # Use system-installed Protobuf
-# set(Protobuf_USE_STATIC_LIBS OFF)
-#
-# find_package(Protobuf CONFIG REQUIRED)
-# find_package(grpc CONFIG REQUIRED)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # --- Fetch GoogleTest ---

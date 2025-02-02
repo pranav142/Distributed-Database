@@ -6,14 +6,21 @@
 #define GRPC_CLIENT_H
 
 #include "proto/raft.grpc.pb.h"
-#include "proto/raft.pb.h"
-#include <grpcpp/grpcpp.h>
+#include "client.h"
 
-void create_client();
-class gRPCClient {
+namespace raft {
 
-};
+    class gRPCClient : public Client {
+    public:
+        gRPCClient() = default;
+        ~gRPCClient() override = default;
 
+        void request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term, std::function<void(int term, bool vote_granted)> callback) override;
+    private:
+         static RequestVote create_request_vote(unsigned int term, unsigned int id, unsigned int last_log_index,
+                                    unsigned int last_log_term);
+    };
+}
 
 
 #endif //GRPC_CLIENT_H
