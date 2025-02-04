@@ -222,13 +222,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/raft.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/raft.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/client.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/event_queue.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/events.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -289,7 +288,7 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;ctest.advertisement.all.test.configuration.is.created&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feat/single__thread&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -299,7 +298,7 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="CMake Application.raft">
+  <component name="RunManager" selected="Google Test.ElectionTest.SuccessfulCandidateTransition">
     <configuration name="ElectionTest.SuccessfulCandidateTransition" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="SuccessfulCandidateTransition" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -1321,14 +1320,93 @@
       </method>
     </configuration>
     <list>
+      <item itemvalue="Google Test.ElectionTest.SuccessfulCandidateTransition" />
+      <item itemvalue="Google Test.EventQueueTests.HandlesThreadSafety" />
+      <item itemvalue="Google Test.GTests_run" />
+      <item itemvalue="Google Test.ReplaceLineTest.HandlesValidReplacement" />
+      <item itemvalue="CMake Application.ContinuousBuild" />
+      <item itemvalue="CMake Application.ContinuousConfigure" />
+      <item itemvalue="CMake Application.ContinuousCoverage" />
+      <item itemvalue="CMake Application.ContinuousMemCheck" />
+      <item itemvalue="CMake Application.ContinuousStart" />
+      <item itemvalue="CMake Application.ContinuousSubmit" />
+      <item itemvalue="CMake Application.ContinuousTest" />
+      <item itemvalue="CMake Application.ContinuousUpdate" />
+      <item itemvalue="CMake Application.Continuous" />
+      <item itemvalue="CMake Application.ExperimentalBuild" />
+      <item itemvalue="CMake Application.ExperimentalConfigure" />
+      <item itemvalue="CMake Application.ExperimentalCoverage" />
+      <item itemvalue="CMake Application.ExperimentalMemCheck" />
+      <item itemvalue="CMake Application.ExperimentalStart" />
+      <item itemvalue="CMake Application.ExperimentalSubmit" />
+      <item itemvalue="CMake Application.ExperimentalTest" />
+      <item itemvalue="CMake Application.ExperimentalUpdate" />
+      <item itemvalue="CMake Application.Experimental" />
+      <item itemvalue="CMake Application.NightlyBuild" />
+      <item itemvalue="CMake Application.NightlyConfigure" />
+      <item itemvalue="CMake Application.NightlyCoverage" />
+      <item itemvalue="CMake Application.NightlyMemCheck" />
+      <item itemvalue="CMake Application.NightlyMemoryCheck" />
+      <item itemvalue="CMake Application.NightlyStart" />
+      <item itemvalue="CMake Application.NightlySubmit" />
+      <item itemvalue="CMake Application.NightlyTest" />
+      <item itemvalue="CMake Application.NightlyUpdate" />
+      <item itemvalue="CMake Application.Nightly" />
+      <item itemvalue="CMake Application.acountry" />
+      <item itemvalue="CMake Application.address_sorting" />
+      <item itemvalue="CMake Application.adig" />
+      <item itemvalue="CMake Application.ahost" />
+      <item itemvalue="CMake Application.bad_any_cast_impl" />
+      <item itemvalue="CMake Application.bad_optional_access" />
+      <item itemvalue="CMake Application.bad_variant_access" />
+      <item itemvalue="CMake Application.base" />
+      <item itemvalue="CMake Application.bssl" />
+      <item itemvalue="CMake Application.c-ares" />
+      <item itemvalue="CMake Application.charclass_test" />
+      <item itemvalue="CMake Application.city" />
+      <item itemvalue="CMake Application.civil_time" />
+      <item itemvalue="CMake Application.compile_test" />
+      <item itemvalue="CMake Application.cord" />
+      <item itemvalue="CMake Application.cord_internal" />
+      <item itemvalue="CMake Application.cordz_functions" />
+      <item itemvalue="CMake Application.cordz_handle" />
+      <item itemvalue="CMake Application.cordz_info" />
+      <item itemvalue="CMake Application.cordz_sample_token" />
+      <item itemvalue="CMake Application.crc32c" />
+      <item itemvalue="CMake Application.crc_cord_state" />
+      <item itemvalue="CMake Application.crc_cpu_detect" />
+      <item itemvalue="CMake Application.crc_internal" />
+      <item itemvalue="CMake Application.crypto" />
       <item itemvalue="CMake Application.db" />
-      <item itemvalue="CMake Application.raft" />
+      <item itemvalue="CMake Application.debugging_internal" />
+      <item itemvalue="CMake Application.demangle_internal" />
+      <item itemvalue="CMake Application.dfa_test" />
+      <item itemvalue="CMake Application.die_if_null" />
+      <item itemvalue="CMake Application.examine_stack" />
+      <item itemvalue="CMake Application.example64" />
+      <item itemvalue="CMake Application.example" />
+      <item itemvalue="CMake Application.exhaustive1_test" />
+      <item itemvalue="CMake Application.exhaustive2_test" />
+      <item itemvalue="CMake Application.exhaustive3_test" />
+      <item itemvalue="CMake Application.exhaustive_test" />
+      <item itemvalue="CMake Application.exponential_biased" />
+      <item itemvalue="CMake Application.failure_signal_handler" />
+      <item itemvalue="CMake Application.filtered_re2_test" />
+      <item itemvalue="CMake Application.flags_commandlineflag" />
+      <item itemvalue="CMake Application.flags_commandlineflag_internal" />
+      <item itemvalue="CMake Application.flags_config" />
+      <item itemvalue="CMake Application.flags_internal" />
+      <item itemvalue="CMake Application.flags_marshalling" />
+      <item itemvalue="CMake Application.flags_parse" />
+      <item itemvalue="CMake Application.flags_private_handle_accessor" />
+      <item itemvalue="CMake Application.flags_program_name" />
+      <item itemvalue="CMake Application.flags_reflection" />
+      <item itemvalue="CMake Application.flags_usage" />
+      <item itemvalue="CMake Application.flags_usage_internal" />
       <item itemvalue="CMake Application.gmock" />
       <item itemvalue="CMake Application.gmock_main" />
-      <item itemvalue="CMake Application.gtest" />
-      <item itemvalue="CMake Application.gtest_main" />
-      <item itemvalue="CMake Application.address_sorting" />
       <item itemvalue="CMake Application.gpr" />
+      <item itemvalue="CMake Application.graphcycles_internal" />
       <item itemvalue="CMake Application.grpc" />
       <item itemvalue="CMake Application.grpc++" />
       <item itemvalue="CMake Application.grpc++_alts" />
@@ -1346,85 +1424,17 @@
       <item itemvalue="CMake Application.grpc_ruby_plugin" />
       <item itemvalue="CMake Application.grpc_unsecure" />
       <item itemvalue="CMake Application.grpcpp_channelz" />
-      <item itemvalue="CMake Application.plugins" />
-      <item itemvalue="CMake Application.tools" />
-      <item itemvalue="CMake Application.tools_c" />
-      <item itemvalue="CMake Application.tools_cxx" />
-      <item itemvalue="CMake Application.upb_base_lib" />
-      <item itemvalue="CMake Application.upb_json_lib" />
-      <item itemvalue="CMake Application.upb_mem_lib" />
-      <item itemvalue="CMake Application.upb_message_lib" />
-      <item itemvalue="CMake Application.upb_mini_descriptor_lib" />
-      <item itemvalue="CMake Application.upb_textformat_lib" />
-      <item itemvalue="CMake Application.upb_wire_lib" />
-      <item itemvalue="CMake Application.utf8_range_lib" />
-      <item itemvalue="CMake Application.Continuous" />
-      <item itemvalue="CMake Application.ContinuousBuild" />
-      <item itemvalue="CMake Application.ContinuousConfigure" />
-      <item itemvalue="CMake Application.ContinuousCoverage" />
-      <item itemvalue="CMake Application.ContinuousMemCheck" />
-      <item itemvalue="CMake Application.ContinuousStart" />
-      <item itemvalue="CMake Application.ContinuousSubmit" />
-      <item itemvalue="CMake Application.ContinuousTest" />
-      <item itemvalue="CMake Application.ContinuousUpdate" />
-      <item itemvalue="CMake Application.Experimental" />
-      <item itemvalue="CMake Application.ExperimentalBuild" />
-      <item itemvalue="CMake Application.ExperimentalConfigure" />
-      <item itemvalue="CMake Application.ExperimentalCoverage" />
-      <item itemvalue="CMake Application.ExperimentalMemCheck" />
-      <item itemvalue="CMake Application.ExperimentalStart" />
-      <item itemvalue="CMake Application.ExperimentalSubmit" />
-      <item itemvalue="CMake Application.ExperimentalTest" />
-      <item itemvalue="CMake Application.ExperimentalUpdate" />
-      <item itemvalue="CMake Application.Nightly" />
-      <item itemvalue="CMake Application.NightlyBuild" />
-      <item itemvalue="CMake Application.NightlyConfigure" />
-      <item itemvalue="CMake Application.NightlyCoverage" />
-      <item itemvalue="CMake Application.NightlyMemCheck" />
-      <item itemvalue="CMake Application.NightlyMemoryCheck" />
-      <item itemvalue="CMake Application.NightlyStart" />
-      <item itemvalue="CMake Application.NightlySubmit" />
-      <item itemvalue="CMake Application.NightlyTest" />
-      <item itemvalue="CMake Application.NightlyUpdate" />
-      <item itemvalue="CMake Application.bad_any_cast_impl" />
-      <item itemvalue="CMake Application.bad_optional_access" />
-      <item itemvalue="CMake Application.bad_variant_access" />
-      <item itemvalue="CMake Application.base" />
-      <item itemvalue="CMake Application.city" />
-      <item itemvalue="CMake Application.civil_time" />
-      <item itemvalue="CMake Application.cord" />
-      <item itemvalue="CMake Application.cord_internal" />
-      <item itemvalue="CMake Application.cordz_functions" />
-      <item itemvalue="CMake Application.cordz_handle" />
-      <item itemvalue="CMake Application.cordz_info" />
-      <item itemvalue="CMake Application.cordz_sample_token" />
-      <item itemvalue="CMake Application.crc32c" />
-      <item itemvalue="CMake Application.crc_cord_state" />
-      <item itemvalue="CMake Application.crc_cpu_detect" />
-      <item itemvalue="CMake Application.crc_internal" />
-      <item itemvalue="CMake Application.debugging_internal" />
-      <item itemvalue="CMake Application.demangle_internal" />
-      <item itemvalue="CMake Application.die_if_null" />
-      <item itemvalue="CMake Application.examine_stack" />
-      <item itemvalue="CMake Application.exponential_biased" />
-      <item itemvalue="CMake Application.failure_signal_handler" />
-      <item itemvalue="CMake Application.flags_commandlineflag" />
-      <item itemvalue="CMake Application.flags_commandlineflag_internal" />
-      <item itemvalue="CMake Application.flags_config" />
-      <item itemvalue="CMake Application.flags_internal" />
-      <item itemvalue="CMake Application.flags_marshalling" />
-      <item itemvalue="CMake Application.flags_parse" />
-      <item itemvalue="CMake Application.flags_private_handle_accessor" />
-      <item itemvalue="CMake Application.flags_program_name" />
-      <item itemvalue="CMake Application.flags_reflection" />
-      <item itemvalue="CMake Application.flags_usage" />
-      <item itemvalue="CMake Application.flags_usage_internal" />
-      <item itemvalue="CMake Application.graphcycles_internal" />
+      <item itemvalue="CMake Application.gtest" />
+      <item itemvalue="CMake Application.gtest_main" />
       <item itemvalue="CMake Application.hash" />
       <item itemvalue="CMake Application.hashtablez_sampler" />
       <item itemvalue="CMake Application.int128" />
       <item itemvalue="CMake Application.kernel_timeout_internal" />
       <item itemvalue="CMake Application.leak_check" />
+      <item itemvalue="CMake Application.libprotobuf-lite" />
+      <item itemvalue="CMake Application.libprotobuf" />
+      <item itemvalue="CMake Application.libprotoc" />
+      <item itemvalue="CMake Application.libupb" />
       <item itemvalue="CMake Application.log_entry" />
       <item itemvalue="CMake Application.log_flags" />
       <item itemvalue="CMake Application.log_globals" />
@@ -1442,7 +1452,19 @@
       <item itemvalue="CMake Application.log_sink" />
       <item itemvalue="CMake Application.low_level_hash" />
       <item itemvalue="CMake Application.malloc_internal" />
+      <item itemvalue="CMake Application.mimics_pcre_test" />
+      <item itemvalue="CMake Application.minigzip64" />
+      <item itemvalue="CMake Application.minigzip" />
+      <item itemvalue="CMake Application.parse_test" />
       <item itemvalue="CMake Application.periodic_sampler" />
+      <item itemvalue="CMake Application.plugins" />
+      <item itemvalue="CMake Application.possible_match_test" />
+      <item itemvalue="CMake Application.protoc-gen-upb" />
+      <item itemvalue="CMake Application.protoc-gen-upb_minitable" />
+      <item itemvalue="CMake Application.protoc-gen-upbdefs" />
+      <item itemvalue="CMake Application.protoc" />
+      <item itemvalue="CMake Application.protolib" />
+      <item itemvalue="CMake Application.raft" />
       <item itemvalue="CMake Application.random_distributions" />
       <item itemvalue="CMake Application.random_internal_distribution_test_util" />
       <item itemvalue="CMake Application.random_internal_platform" />
@@ -1454,76 +1476,53 @@
       <item itemvalue="CMake Application.random_internal_seed_material" />
       <item itemvalue="CMake Application.random_seed_gen_exception" />
       <item itemvalue="CMake Application.random_seed_sequences" />
+      <item itemvalue="CMake Application.random_test" />
       <item itemvalue="CMake Application.raw_hash_set" />
       <item itemvalue="CMake Application.raw_logging_internal" />
-      <item itemvalue="CMake Application.scoped_set_env" />
-      <item itemvalue="CMake Application.spinlock_wait" />
-      <item itemvalue="CMake Application.stacktrace" />
-      <item itemvalue="CMake Application.status" />
-      <item itemvalue="CMake Application.statusor" />
-      <item itemvalue="CMake Application.str_format_internal" />
-      <item itemvalue="CMake Application.strerror" />
-      <item itemvalue="CMake Application.string_view" />
-      <item itemvalue="CMake Application.strings" />
-      <item itemvalue="CMake Application.strings_internal" />
-      <item itemvalue="CMake Application.symbolize" />
-      <item itemvalue="CMake Application.synchronization" />
-      <item itemvalue="CMake Application.throw_delegate" />
-      <item itemvalue="CMake Application.time" />
-      <item itemvalue="CMake Application.time_zone" />
-      <item itemvalue="CMake Application.vlog_config_internal" />
-      <item itemvalue="CMake Application.bssl" />
-      <item itemvalue="CMake Application.crypto" />
-      <item itemvalue="CMake Application.ssl" />
-      <item itemvalue="CMake Application.c-ares" />
-      <item itemvalue="CMake Application.acountry" />
-      <item itemvalue="CMake Application.adig" />
-      <item itemvalue="CMake Application.ahost" />
-      <item itemvalue="CMake Application.libprotobuf-lite" />
-      <item itemvalue="CMake Application.libprotobuf" />
-      <item itemvalue="CMake Application.libprotoc" />
-      <item itemvalue="CMake Application.libupb" />
-      <item itemvalue="CMake Application.protoc" />
-      <item itemvalue="CMake Application.protoc-gen-upb" />
-      <item itemvalue="CMake Application.protoc-gen-upb_minitable" />
-      <item itemvalue="CMake Application.protoc-gen-upbdefs" />
-      <item itemvalue="CMake Application.utf8_range" />
-      <item itemvalue="CMake Application.utf8_validity" />
-      <item itemvalue="CMake Application.charclass_test" />
-      <item itemvalue="CMake Application.compile_test" />
-      <item itemvalue="CMake Application.dfa_test" />
-      <item itemvalue="CMake Application.exhaustive1_test" />
-      <item itemvalue="CMake Application.exhaustive2_test" />
-      <item itemvalue="CMake Application.exhaustive3_test" />
-      <item itemvalue="CMake Application.exhaustive_test" />
-      <item itemvalue="CMake Application.filtered_re2_test" />
-      <item itemvalue="CMake Application.mimics_pcre_test" />
-      <item itemvalue="CMake Application.parse_test" />
-      <item itemvalue="CMake Application.possible_match_test" />
-      <item itemvalue="CMake Application.random_test" />
       <item itemvalue="CMake Application.re2" />
       <item itemvalue="CMake Application.re2_arg_test" />
       <item itemvalue="CMake Application.re2_test" />
       <item itemvalue="CMake Application.regexp_benchmark" />
       <item itemvalue="CMake Application.regexp_test" />
       <item itemvalue="CMake Application.required_prefix_test" />
+      <item itemvalue="CMake Application.scoped_set_env" />
       <item itemvalue="CMake Application.search_test" />
       <item itemvalue="CMake Application.set_test" />
       <item itemvalue="CMake Application.simplify_test" />
+      <item itemvalue="CMake Application.spinlock_wait" />
+      <item itemvalue="CMake Application.ssl" />
+      <item itemvalue="CMake Application.stacktrace" />
+      <item itemvalue="CMake Application.status" />
+      <item itemvalue="CMake Application.statusor" />
+      <item itemvalue="CMake Application.str_format_internal" />
+      <item itemvalue="CMake Application.strerror" />
       <item itemvalue="CMake Application.string_generator_test" />
+      <item itemvalue="CMake Application.string_view" />
+      <item itemvalue="CMake Application.strings" />
+      <item itemvalue="CMake Application.strings_internal" />
+      <item itemvalue="CMake Application.symbolize" />
+      <item itemvalue="CMake Application.synchronization" />
       <item itemvalue="CMake Application.testing" />
-      <item itemvalue="CMake Application.example" />
-      <item itemvalue="CMake Application.example64" />
-      <item itemvalue="CMake Application.minigzip" />
-      <item itemvalue="CMake Application.minigzip64" />
+      <item itemvalue="CMake Application.throw_delegate" />
+      <item itemvalue="CMake Application.time" />
+      <item itemvalue="CMake Application.time_zone" />
+      <item itemvalue="CMake Application.tools" />
+      <item itemvalue="CMake Application.tools_c" />
+      <item itemvalue="CMake Application.tools_cxx" />
+      <item itemvalue="CMake Application.upb_base_lib" />
+      <item itemvalue="CMake Application.upb_json_lib" />
+      <item itemvalue="CMake Application.upb_mem_lib" />
+      <item itemvalue="CMake Application.upb_message_lib" />
+      <item itemvalue="CMake Application.upb_mini_descriptor_lib" />
+      <item itemvalue="CMake Application.upb_textformat_lib" />
+      <item itemvalue="CMake Application.upb_wire_lib" />
+      <item itemvalue="CMake Application.utf8_range" />
+      <item itemvalue="CMake Application.utf8_range_lib" />
+      <item itemvalue="CMake Application.utf8_validity" />
+      <item itemvalue="CMake Application.vlog_config_internal" />
       <item itemvalue="CMake Application.zlib" />
       <item itemvalue="CMake Application.zlibstatic" />
-      <item itemvalue="CMake Application.protolib" />
       <item itemvalue="CTest Application.All CTest" />
-      <item itemvalue="Google Test.GTests_run" />
-      <item itemvalue="Google Test.ElectionTest.SuccessfulCandidateTransition" />
-      <item itemvalue="Google Test.EventQueueTests.HandlesThreadSafety" />
-      <item itemvalue="Google Test.ReplaceLineTest.HandlesValidReplacement" />
     </list>
     <recent_temporary>
       <list>
@@ -1548,7 +1547,8 @@
       <workItem from="1738094564620" duration="4252000" />
       <workItem from="1738123597947" duration="1207000" />
       <workItem from="1738268968356" duration="6798000" />
-      <workItem from="1738462081829" duration="319000" />
+      <workItem from="1738462081829" duration="1640000" />
+      <workItem from="1738712944647" duration="38000" />
     </task>
     <servers />
   </component>

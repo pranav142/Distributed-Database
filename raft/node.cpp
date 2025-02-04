@@ -4,6 +4,7 @@
 #include "node.h"
 #include <functional>
 #include "utils.h"
+#include "../libs/grpc/src/core/lib/iomgr/timer_manager.h"
 
 raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
                  std::unique_ptr<Client> client) : m_id(id),
@@ -11,8 +12,7 @@ raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_con
                                                    m_state("log_" + std::to_string(id) + ".txt"),
                                                    m_io(io),
                                                    m_election_timer(io),
-                                                   m_strand(boost::asio::make_strand(io)),
-                                                   m_work_guard(boost::asio::make_work_guard(io)),
+                                                   m_work_guard(make_work_guard(io)),
                                                    m_client(std::move(client)) {
 }
 
@@ -33,132 +33,66 @@ unsigned int raft::Node::get_last_applied_index() const {
 }
 
 void raft::Node::reset_election_timer() {
-    // Thread safe way to modify the election timers
-    boost::asio::post(m_io, [this]() {
-        m_election_timer.cancel();
-
-        unsigned int random_time_ms = generate_random_number(ELECTION_TIMER_MIN_MS, ELECTION_TIMER_MAX_MS);
-        m_election_timer.expires_after(boost::asio::chrono::milliseconds(random_time_ms));
-        m_election_timer.async_wait([this](const boost::system::error_code &ec) {
-            if (!ec) {
-                std::cout << "event pushed" << std::endl;
-                m_event_queue.push(ElectionTimeout{});
-            } else if (ec != boost::asio::error::operation_aborted) {
-                std::cout << "Election timer error: " << ec.message() << std::endl;
-            }
-        });
+    m_election_timer.cancel();
+    unsigned int random_time_ms = generate_random_number(ELECTION_TIMER_MIN_MS, ELECTION_TIMER_MAX_MS);
+    m_election_timer.expires_after(boost::asio::chrono::milliseconds(random_time_ms));
+    // TODO: Clean this to be more readable
+    m_election_timer.async_wait([this](const boost::system::error_code &ec) {
+        if (ec) {
+            std::cout << "Election timer error: " << ec.message() << std::endl;
+            return;
+        }
+        if (m_server_state == ServerState::FOLLOWER || m_server_state == ServerState::CANDIDATE) {
+            become_candidate();
+        } else {
+            std::cout << "Election timeout occured while leader" << std::endl;
+        }
     });
 }
 
 void raft::Node::initialize() {
-    reset_election_timer();
+    become_follower(1);
 }
 
 void raft::Node::shut_down_election_timer() {
-    boost::asio::post(m_io, [this]() {
-        m_election_timer.cancel();
-    });
-}
-
-void raft::Node::stop() {
-    m_event_queue.push(QuitEvent{});
-    shut_down_election_timer();
-    m_work_guard.reset();
-    m_io.stop();
+    m_election_timer.cancel();
 }
 
 void raft::Node::become_follower(unsigned int term) {
     m_server_state = ServerState::FOLLOWER;
+    // Vote for no one
+    m_state.set_voted_for(-1);
     m_state.set_current_term(term);
+    reset_election_timer();
+}
+
+void raft::Node::become_candidate() {
+    m_server_state = ServerState::CANDIDATE;
+    // Vote for self
+    m_state.set_voted_for(m_id);
+    m_state.increment_term();
+    reset_election_timer();
+
+    // start the election
+    // Finding out how many are needed to win
+    // Send off request votes to all of the nodes
+    // Need to make sure that if a response comes back
 }
 
 void raft::Node::become_leader() {
     m_server_state = ServerState::LEADER;
 }
 
-void raft::Node::run_follower_loop() {
-    bool should_exit = false;
-
-    while (m_server_state == ServerState::FOLLOWER) {
-        Event event = m_event_queue.pop();
-        std::visit([this, &should_exit](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ElectionTimeout>) {
-                std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.
-                        get_current_term()
-                        << std::endl;
-                become_candidate();
-                should_exit = true;
-            } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_running = false;
-                should_exit = true;
-            }
-        }, event);
-
-        if (should_exit) {
-            return;
-        }
-    }
-}
-
-void raft::Node::run_candidate_loop() {
-    m_state.increment_term();
-    m_state.set_voted_for(m_id);
-    reset_election_timer();
-
-    bool should_exit = false;
-
-    while (m_server_state == ServerState::CANDIDATE) {
-        Event event = m_event_queue.pop();
-        std::visit([this, &should_exit](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ElectionTimeout>) {
-                std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.
-                        get_current_term()
-                        << std::endl;
-                should_exit = true;
-            } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_running = false;
-                should_exit = true;
-            }
-        }, event);
-
-        if (should_exit) {
-            return;
-        }
-    }
-}
-
 // Blocking Call that causes the node to run
 void raft::Node::run() {
-    m_running = true;
-
     initialize();
+    m_io.run();
+}
 
-    std::thread timer_thread([this] {
-        m_io.run();
-    });
-
-    std::thread event_thread([this] {
-        while (m_running) {
-            switch (m_server_state) {
-                case ServerState::FOLLOWER: {
-                    run_follower_loop();
-                    break;
-                }
-                case ServerState::CANDIDATE: {
-                    run_candidate_loop();
-                    break;
-                }
-                case ServerState::LEADER: {
-                    break;
-                }
-            }
-        }
-    });
-
-    event_thread.join();
-    timer_thread.join();
+void raft::Node::stop() {
+    shut_down_election_timer();
+    m_work_guard.reset();
+    m_io.stop();
 }
 
 std::string raft::server_state_to_str(ServerState state) {
@@ -172,8 +106,4 @@ std::string raft::server_state_to_str(ServerState state) {
         default:
             return "";
     }
-}
-
-void raft::Node::become_candidate() {
-    m_server_state = ServerState::CANDIDATE;
 }

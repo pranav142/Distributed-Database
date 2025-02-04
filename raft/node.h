@@ -8,15 +8,13 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include "cluster.h"
-#include "events.h"
-#include "event_queue.h"
 #include "persistent_state.h"
 #include "client.h"
 
 
 namespace raft {
-    constexpr int ELECTION_TIMER_MIN_MS = 1500;
-    constexpr int ELECTION_TIMER_MAX_MS = 3000;
+    constexpr int ELECTION_TIMER_MIN_MS = 150;
+    constexpr int ELECTION_TIMER_MAX_MS = 300;
 
     enum class ServerState : int {
         FOLLOWER = 0,
@@ -53,10 +51,6 @@ namespace raft {
 
         void become_leader();
 
-        void run_follower_loop();
-
-        void run_candidate_loop();
-
     private:
         unsigned int m_id;
         unsigned int m_commit_index = 0;
@@ -72,14 +66,10 @@ namespace raft {
         // A map of ID's and corresponding IPs
         ClusterMap m_cluster;
 
-        EventQueue<Event> m_event_queue;
-        bool m_running = false;
-
         // Timer Stuff
         boost::asio::io_context &m_io;
         boost::asio::steady_timer m_election_timer;
 
-        boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
         // Work guard is needed to keep the io context running even when there is no work
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
 
