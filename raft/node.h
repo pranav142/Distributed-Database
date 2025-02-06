@@ -15,8 +15,8 @@
 
 
 namespace raft {
-    constexpr int ELECTION_TIMER_MIN_MS = 1500;
-    constexpr int ELECTION_TIMER_MAX_MS = 3000;
+    constexpr int ELECTION_TIMER_MIN_MS = 150;
+    constexpr int ELECTION_TIMER_MAX_MS = 300;
 
     enum class ServerState : int {
         FOLLOWER = 0,
@@ -56,6 +56,10 @@ namespace raft {
         void run_follower_loop();
 
         void run_candidate_loop();
+
+        void run_leader_loop();
+
+        int calculate_quorum() const;
 
     private:
         unsigned int m_id;

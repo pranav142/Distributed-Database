@@ -21,6 +21,8 @@ namespace raft {
 
         [[nodiscard]] unsigned int get_last_log_index() const;
 
+        unsigned int get_last_log_term() const;
+
         [[nodiscard]] ErrorCode append_log(const std::string &entry) const;
 
         [[nodiscard]] std::optional<Log> read_log(unsigned int index) const;

@@ -37,6 +37,23 @@ unsigned int raft::PersistentState::get_last_log_index() const {
     return std::stoi(index_str);
 }
 
+unsigned int raft::PersistentState::get_last_log_term() const {
+    std::string last_line, index_str, term_str;
+
+    last_line = get_last_line(m_log_file_path);
+    std::istringstream iss(last_line);
+    std::getline(iss, index_str, ',');
+    std::getline(iss, term_str, ',');
+
+    // If no logs have been written return a log index of 0
+    if (index_str == "Header") {
+        return 0;
+    }
+
+    return std::stoi(term_str);
+
+}
+
 raft::ErrorCode raft::PersistentState::append_log(const std::string &entry) const {
     // The next log index will be one more than the last log index
     unsigned int index = get_last_log_index() + 1;

@@ -13,6 +13,11 @@ struct QuitEvent {
 struct ElectionTimeout {
 };
 
-typedef std::variant<ElectionTimeout, QuitEvent> Event;
+struct RequestVoteResponse {
+    int term;
+    bool vote_granted;
+};
+
+typedef std::variant<ElectionTimeout, QuitEvent, RequestVoteResponse> Event;
 
 #endif //EVENTS_H
