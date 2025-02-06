@@ -11,11 +11,10 @@
 
 namespace raft {
     struct NodeInfo {
-        std::string ip;
-        unsigned short port;
+        std::string address;
 
         friend std::ostream &operator<<(std::ostream &os, const NodeInfo &node) {
-            os << node.ip << ":" << node.port;
+            os << node.address;
             return os;
         }
     };

@@ -7,17 +7,21 @@
 
 #include <variant>
 
-struct QuitEvent {
-};
+namespace raft {
+    struct QuitEvent {
+    };
 
-struct ElectionTimeout {
-};
+    struct ElectionTimeoutEvent {
+    };
 
-struct RequestVoteResponse {
-    int term;
-    bool vote_granted;
-};
+    struct RequestVoteResponseEvent {
+        int term;
+        bool vote_granted;
+        bool success;
+        std::string address;
+    };
 
-typedef std::variant<ElectionTimeout, QuitEvent, RequestVoteResponse> Event;
+    typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent> Event;
+}
 
 #endif //EVENTS_H

@@ -55,6 +55,10 @@ namespace raft {
 
         void run_follower_loop();
 
+        void request_vote(const std::string &address);
+
+        void start_election();
+
         void run_candidate_loop();
 
         void run_leader_loop();

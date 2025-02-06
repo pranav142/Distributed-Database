@@ -15,9 +15,9 @@ namespace raft {
         gRPCClient() = default;
         ~gRPCClient() override = default;
 
-        void request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term, std::function<void(int term, bool vote_granted)> callback) override;
+        void request_vote(std::string address, const RequestVoteRPC& request_vote_rpc, std::function<void(RequestVoteResponse)> callback) override;
     private:
-         static RequestVote create_request_vote(unsigned int term, unsigned int id, unsigned int last_log_index,
+         static raft_gRPC::RequestVote create_request_vote(unsigned int term, unsigned int id, unsigned int last_log_index,
                                     unsigned int last_log_term);
     };
 }

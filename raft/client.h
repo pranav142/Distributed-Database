@@ -13,6 +13,20 @@ namespace raft {
     // Virtual Class that enables raft to use a variety
     // of networking protocols, and enables the tester to effectively
     // Mock responses
+    struct RequestVoteRPC {
+        unsigned int term;
+        unsigned int candidate_id;
+        unsigned int last_log_index;
+        unsigned int last_log_term;
+    };
+
+    struct RequestVoteResponse {
+        int term; // term of the voter
+        bool vote_granted;
+        bool success; // indicates if the response was a success
+        std::string address; // address of the voter
+    };
+
     class Client {
     public:
         virtual ~Client() = default;
@@ -20,11 +34,8 @@ namespace raft {
         // This method is responsible for requesting a vote from peer
         // Once the request has been processed the callback will then
         // be invoked; this allows for simple asynchronous programming
-        virtual void request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term,
-                                       std::function<void(int term, bool vote_granted)> callback) = 0;
-
-        // Create a method to cancel any outgoing requests
-        // virtual void cancel();
+        virtual void request_vote(std::string address, const RequestVoteRPC& request_vote_rpc,
+                                  std::function<void(RequestVoteResponse)> callback) = 0;
     };
 }
 

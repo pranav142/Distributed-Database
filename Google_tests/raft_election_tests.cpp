@@ -3,17 +3,24 @@
 //
 
 #include <gtest/gtest.h>
+#include <proto/raft.pb.h>
+
 #include "client.h"
 #include "node.h"
 
+// TODO: FIX for new interface
 class MockClient final : public raft::Client {
 public:
-    void request_vote(std::string address, int term, int candidate_id, int last_log_index, int last_log_term,
-                      std::function<void(int term, bool vote_granted)> callback) override {
-        std::thread t([callback]() {
+    void request_vote(std::string address, const raft::RequestVoteRPC &request_vote_rpc,
+                      std::function<void(raft::RequestVoteResponse)> callback) override {
+        std::thread t([callback, request_vote_rpc, address]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
-            // calls the callback with term 0 and vote granted
-            callback(0, true);
+            raft::RequestVoteResponse response;
+            response.term = static_cast<int>(request_vote_rpc.term);
+            response.address = address;
+            response.success = true;
+            response.vote_granted = true;
+            callback(response);
         });
         t.detach();
     }
@@ -23,9 +30,9 @@ TEST(ElectionTest, CoreElectionLogic) {
     std::unique_ptr<MockClient> client = std::make_unique<MockClient>();
 
     raft::ClusterMap cluster_map{
-        {1, raft::NodeInfo{"0.0.0.0", 6969}},
-        {2, raft::NodeInfo{"0.0.0.0", 7070}},
-        {3, raft::NodeInfo{"0.0.0.0", 4206}},
+        {1, raft::NodeInfo{"0.0.0.0:6969"}},
+        {2, raft::NodeInfo{"0.0.0.0:7070"}},
+        {3, raft::NodeInfo{"0.0.0.0:4206"}},
     };
 
     boost::asio::io_context io_context;
