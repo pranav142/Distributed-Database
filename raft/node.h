@@ -12,6 +12,7 @@
 #include "event_queue.h"
 #include "persistent_state.h"
 #include "client.h"
+#include "gRPC_server.h"
 
 
 namespace raft {
@@ -40,12 +41,15 @@ namespace raft {
 
         void run();
 
-        void stop();
+        void cancel();
+
 
     private:
         void initialize();
 
         void shut_down_election_timer();
+
+        void stop();
 
         void become_follower(unsigned int term);
 
@@ -64,6 +68,8 @@ namespace raft {
         void run_leader_loop();
 
         int calculate_quorum() const;
+
+        void run_server(const std::string &address);
 
     private:
         unsigned int m_id;
@@ -92,6 +98,7 @@ namespace raft {
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
 
         std::unique_ptr<Client> m_client;
+        std::unique_ptr<grpc::Server> m_server;
     };
 
     std::string server_state_to_str(ServerState state);

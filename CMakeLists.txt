@@ -46,6 +46,8 @@ set(RAFT_FILES
         raft/client.h
         raft/gRPC_client.cpp
         raft/gRPC_client.h
+        raft/gRPC_server.cpp
+        raft/gRPC_server.h
 )
 
 add_library(raft
@@ -84,6 +86,7 @@ add_executable(GTests_run
         Google_tests/raft_node_tests.cpp
         Google_tests/raft_event_queue_tests.cpp
         Google_tests/raft_election_tests.cpp
+        Google_tests/raft_gRPC_tests.cpp
 )
 
 target_link_libraries(GTests_run

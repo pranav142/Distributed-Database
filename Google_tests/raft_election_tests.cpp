@@ -8,7 +8,6 @@
 #include "client.h"
 #include "node.h"
 
-// TODO: FIX for new interface
 class MockClient final : public raft::Client {
 public:
     void request_vote(std::string address, const raft::RequestVoteRPC &request_vote_rpc,
@@ -40,7 +39,7 @@ TEST(ElectionTest, CoreElectionLogic) {
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
-        node.stop();
+        node.cancel();
     });
 
     node.run();

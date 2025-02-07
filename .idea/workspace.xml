@@ -222,14 +222,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Google_tests/raft_gRPC_tests.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/raft/gRPC_server.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/raft/gRPC_server.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/raft.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/raft.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/client.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/cluster.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/cluster.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/events.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/events.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
     </list>
@@ -2132,7 +2132,7 @@
       <workItem from="1738268968356" duration="6798000" />
       <workItem from="1738462081829" duration="319000" />
       <workItem from="1738795442872" duration="13664000" />
-      <workItem from="1738871988196" duration="3646000" />
+      <workItem from="1738871988196" duration="9266000" />
     </task>
     <servers />
   </component>

@@ -5,6 +5,7 @@
 
 #include <thread>
 
+#include "gRPC_server.h"
 #include "utils.h"
 
 raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
@@ -15,7 +16,8 @@ raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_con
                                                    m_election_timer(io),
                                                    m_strand(boost::asio::make_strand(io)),
                                                    m_work_guard(boost::asio::make_work_guard(io)),
-                                                   m_client(std::move(client)) {
+                                                   m_client(std::move(client)),
+                                                   m_server(nullptr) {
 }
 
 raft::ServerState raft::Node::get_server_state() const {
@@ -61,8 +63,15 @@ void raft::Node::shut_down_election_timer() {
     });
 }
 
-void raft::Node::stop() {
+void raft::Node::cancel() {
     m_event_queue.push(QuitEvent{});
+}
+
+void raft::Node::stop() {
+    m_running = false;
+    if (m_server) {
+        m_server->Shutdown();
+    }
     shut_down_election_timer();
     m_work_guard.reset();
     m_io.stop();
@@ -75,7 +84,7 @@ void raft::Node::become_follower(unsigned int term) {
     reset_election_timer();
     m_state.set_current_term(term);
 
-    // Vote for no one
+    // Vote focanr no one
     m_state.set_voted_for(-1);
 }
 
@@ -97,7 +106,7 @@ void raft::Node::run_follower_loop() {
                 become_candidate();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_running = false;
+                stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "WARNING: GOT VOTE AS FOLLOWER" << std::endl;
@@ -117,7 +126,7 @@ void raft::Node::request_vote(const std::string &address) {
     request_vote_rpc.last_log_index = m_state.get_last_log_index();
     request_vote_rpc.last_log_term = m_state.get_last_log_term();
 
-    m_client->request_vote(address, request_vote_rpc, [this](const RequestVoteResponse& response) {
+    m_client->request_vote(address, request_vote_rpc, [this](const RequestVoteResponse &response) {
         RequestVoteResponseEvent request_vote_event{};
         request_vote_event.term = response.term;
         request_vote_event.vote_granted = response.vote_granted;
@@ -156,11 +165,11 @@ void raft::Node::run_candidate_loop() {
                 become_candidate();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_running = false;
                 should_exit = true;
+                stop();
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "GOT VOTE" << std::endl;
-                int term = arg.term;
+                int term = arg.termfal;
                 bool vote_granted = arg.vote_granted;
                 std::string address = arg.address;
                 bool success = arg.success;
@@ -205,7 +214,7 @@ void raft::Node::run_leader_loop() {
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
                 std::cout << "WARNING: Got Election Timeout as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_running = false;
+                stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "WARNING: Got Request Vote Response as a leader" << std::endl;
@@ -224,6 +233,16 @@ int raft::Node::calculate_quorum() const {
     return num_voters / 2 + 1;
 }
 
+void raft::Node::run_server(const std::string &address) {
+    RaftSeverImpl service(m_event_queue);
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
+    builder.RegisterService(&service);
+    m_server = builder.BuildAndStart();
+    std::cout << "Server listening on " << address << std::endl;
+    m_server->Wait();
+}
+
 // Blocking Call that causes the node to run
 void raft::Node::run() {
     m_running = true;
@@ -232,6 +251,10 @@ void raft::Node::run() {
 
     std::thread timer_thread([this] {
         m_io.run();
+    });
+
+    std::thread server_thread([this] {
+        run_server(m_cluster[m_id].address);
     });
 
     while (m_running) {
@@ -251,6 +274,7 @@ void raft::Node::run() {
         }
     }
 
+    server_thread.join();
     timer_thread.join();
 }
 

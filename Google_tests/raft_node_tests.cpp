@@ -18,7 +18,7 @@ TEST(ElectionTest, SuccessfulCandidateTransition) {
     // This should mean there are 5 election timeout events
     std::thread stop_thread([&node]() {
         sleep(5 * raft::ELECTION_TIMER_MAX_MS / 1000);
-        node.stop();
+        node.cancel();
     });
 
     node.run();

@@ -7,6 +7,8 @@
 
 #include <variant>
 
+#include "client.h"
+
 namespace raft {
     struct QuitEvent {
     };
@@ -21,7 +23,15 @@ namespace raft {
         std::string address;
     };
 
-    typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent> Event;
+    struct RequestVoteEvent {
+        unsigned int term;
+        unsigned int candidate_id;
+        unsigned int last_log_index;
+        unsigned int last_log_term;
+        std::function<void(RequestVoteResponse)> callback;
+    };
+
+    typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent, RequestVoteEvent> Event;
 }
 
 #endif //EVENTS_H
