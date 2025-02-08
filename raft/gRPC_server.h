@@ -14,14 +14,21 @@
 namespace raft {
     class RaftSeverImpl final : public raft_gRPC::RaftService::Service {
     public:
-        explicit RaftSeverImpl(EventQueue<Event> &event_queue) : m_event_queue(event_queue) {
+       explicit RaftSeverImpl(EventQueue<Event> &event_queue)
+            : m_event_queue(event_queue) {
+            std::cout << "RaftServerImpl constructed" << std::endl;
         };
 
-        grpc::Status HandleVoteRequest(grpc::ServerContext *context, const raft_gRPC::RequestVote &request_vote,
-                                       raft_gRPC::RequestVoteResponse *response);
+        ~RaftSeverImpl() {
+            std::cout << "RaftServerImpl destroyed" << std::endl;
+        }
+
+        grpc::Status HandleVoteRequest(grpc::ServerContext *context, const raft_gRPC::RequestVote *request_vote,
+                                       raft_gRPC::RequestVoteResponse *response) override;
 
     private:
         EventQueue<Event> &m_event_queue;
+
     };
 }
 

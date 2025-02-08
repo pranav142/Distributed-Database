@@ -91,6 +91,8 @@ void raft::Node::become_follower(unsigned int term) {
 void raft::Node::become_leader() {
     std::cout << "Became Leader" << std::endl;
     m_server_state = ServerState::LEADER;
+
+    m_state.set_voted_for(-1);
 }
 
 void raft::Node::run_follower_loop() {
@@ -110,6 +112,25 @@ void raft::Node::run_follower_loop() {
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "WARNING: GOT VOTE AS FOLLOWER" << std::endl;
+            } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
+                std::cout << "Got request for vote" << std::endl;
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                }
+
+                RequestVoteResponse request_vote_response{};
+                request_vote_response.address = m_cluster[m_id].address;
+                request_vote_response.success = true;
+                request_vote_response.vote_granted = false;
+                request_vote_response.term = static_cast<int>(m_state.get_current_term());
+
+                // if we haven't voted then cast a vote
+                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term) && m_state.get_voted_for() != -1) {
+                    request_vote_response.vote_granted = true;
+                    m_state.set_voted_for(arg.candidate_id);
+                }
+
+                arg.callback(request_vote_response);
             }
         }, event);
 
@@ -169,7 +190,7 @@ void raft::Node::run_candidate_loop() {
                 stop();
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "GOT VOTE" << std::endl;
-                int term = arg.termfal;
+                int term = arg.term;
                 bool vote_granted = arg.vote_granted;
                 std::string address = arg.address;
                 bool success = arg.success;
@@ -194,6 +215,25 @@ void raft::Node::run_candidate_loop() {
                         become_leader();
                     }
                 }
+            } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
+                std::cout << "Got request for vote" << std::endl;
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                }
+
+                RequestVoteResponse request_vote_response{};
+                request_vote_response.address = m_cluster[m_id].address;
+                request_vote_response.success = true;
+                request_vote_response.vote_granted = false;
+                request_vote_response.term = static_cast<int>(m_state.get_current_term());
+
+                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                    become_follower(arg.term);
+                    request_vote_response.vote_granted = true;
+                    m_state.set_voted_for(arg.candidate_id);
+                }
+
+                arg.callback(request_vote_response);
             }
         }, event);
 
@@ -203,6 +243,18 @@ void raft::Node::run_candidate_loop() {
     }
 }
 
+// returns true if the inputted log is as up to date or more up to date
+bool raft::Node::is_log_more_up_to_date(unsigned int last_log_index, unsigned int last_log_term) const {
+    if (last_log_term > m_state.get_last_log_term()) {
+        return true;
+    }
+
+    if (last_log_term == m_state.get_last_log_term() && last_log_index >= m_state.get_last_log_index()) {
+        return true;
+    }
+
+    return false;
+}
 
 void raft::Node::run_leader_loop() {
     bool should_exit = false;
@@ -218,6 +270,25 @@ void raft::Node::run_leader_loop() {
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << "WARNING: Got Request Vote Response as a leader" << std::endl;
+            } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
+                std::cout << "Got request for vote" << std::endl;
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                }
+
+                RequestVoteResponse request_vote_response{};
+                request_vote_response.address = m_cluster[m_id].address;
+                request_vote_response.success = true;
+                request_vote_response.vote_granted = false;
+                request_vote_response.term = static_cast<int>(m_state.get_current_term());
+
+                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                    become_follower(arg.term);
+                    request_vote_response.vote_granted = true;
+                    m_state.set_voted_for(arg.candidate_id);
+                }
+
+                arg.callback(request_vote_response);
             }
         }, event);
 
@@ -234,10 +305,10 @@ int raft::Node::calculate_quorum() const {
 }
 
 void raft::Node::run_server(const std::string &address) {
-    RaftSeverImpl service(m_event_queue);
+    m_service = std::make_unique<RaftSeverImpl>(m_event_queue);
     grpc::ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
+    builder.RegisterService(m_service.get());
     m_server = builder.BuildAndStart();
     std::cout << "Server listening on " << address << std::endl;
     m_server->Wait();

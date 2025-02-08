@@ -29,7 +29,7 @@ namespace raft {
 
     class Client {
     public:
-        virtual ~Client() = default;
+        virtual ~Client() = 0;
 
         // This method is responsible for requesting a vote from peer
         // Once the request has been processed the callback will then

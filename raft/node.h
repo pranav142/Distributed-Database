@@ -43,7 +43,6 @@ namespace raft {
 
         void cancel();
 
-
     private:
         void initialize();
 
@@ -64,6 +63,8 @@ namespace raft {
         void start_election();
 
         void run_candidate_loop();
+
+        bool is_log_more_up_to_date(unsigned int last_log_index, unsigned int last_log_term) const;
 
         void run_leader_loop();
 
@@ -99,6 +100,7 @@ namespace raft {
 
         std::unique_ptr<Client> m_client;
         std::unique_ptr<grpc::Server> m_server;
+        std::unique_ptr<RaftSeverImpl> m_service;
     };
 
     std::string server_state_to_str(ServerState state);
