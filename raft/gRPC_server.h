@@ -16,11 +16,6 @@ namespace raft {
     public:
        explicit RaftSeverImpl(EventQueue<Event> &event_queue)
             : m_event_queue(event_queue) {
-            std::cout << "RaftServerImpl constructed" << std::endl;
-        };
-
-        ~RaftSeverImpl() {
-            std::cout << "RaftServerImpl destroyed" << std::endl;
         }
 
         grpc::Status HandleVoteRequest(grpc::ServerContext *context, const raft_gRPC::RequestVote *request_vote,

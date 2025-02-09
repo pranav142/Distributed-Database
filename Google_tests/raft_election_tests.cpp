@@ -95,3 +95,49 @@ TEST(ElectionTest, RequestVoteTest) {
     stop_thread.join();
     GTEST_ASSERT_TRUE(success);
 }
+
+TEST(ElectionTest, NodeElectionTest) {
+    auto client1 = std::make_unique<raft::gRPCClient>();
+    auto client2 = std::make_unique<raft::gRPCClient>();
+    auto client3 = std::make_unique<raft::gRPCClient>();
+
+    raft::ClusterMap cluster_map{
+        {1, raft::NodeInfo{"127.0.0.1:6969"}},
+        {2, raft::NodeInfo{"127.0.0.1:7070"}},
+        {3, raft::NodeInfo{"127.0.0.1:4206"}},
+    };
+
+    boost::asio::io_context ctx1;
+    raft::Node node_1(1, cluster_map, ctx1, std::move(client1));
+
+    boost::asio::io_context ctx2;
+    raft::Node node_2(2, cluster_map, ctx2, std::move(client2));
+
+    boost::asio::io_context ctx3;
+    raft::Node node_3(3, cluster_map, ctx3, std::move(client3));
+
+
+   std::thread stop_thread([&]() {
+       std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
+       node_1.cancel();
+       node_2.cancel();
+       node_3.cancel();
+   });
+
+    std::thread n1([&node_1]() {
+        node_1.run();
+    });
+
+    std::thread n2([&node_2]() {
+        node_2.run();
+    });
+
+    std::thread n3([&node_3]() {
+        node_3.run();
+    });
+
+    n1.join();
+    n2.join();
+    n3.join();
+    stop_thread.join();
+}

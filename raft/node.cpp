@@ -78,7 +78,7 @@ void raft::Node::stop() {
 }
 
 void raft::Node::become_follower(unsigned int term) {
-    std::cout << "Became Follower" << std::endl;
+    std::cout << m_id << " Became FOLLOWER" << std::endl;
     m_server_state = ServerState::FOLLOWER;
 
     reset_election_timer();
@@ -89,7 +89,7 @@ void raft::Node::become_follower(unsigned int term) {
 }
 
 void raft::Node::become_leader() {
-    std::cout << "Became Leader" << std::endl;
+    std::cout << m_id << " Became LEADER" << std::endl;
     m_server_state = ServerState::LEADER;
 
     m_state.set_voted_for(-1);
@@ -102,7 +102,8 @@ void raft::Node::run_follower_loop() {
         std::visit([this, &should_exit](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.
+                std::cout << m_id << " Election timeout: " << server_state_to_str(m_server_state) << " term: " <<
+                        m_state.
                         get_current_term()
                         << std::endl;
                 become_candidate();
@@ -111,9 +112,9 @@ void raft::Node::run_follower_loop() {
                 stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << "WARNING: GOT VOTE AS FOLLOWER" << std::endl;
+                std::cout << m_id << " WARNING: GOT VOTE AS FOLLOWER" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << "Got request for vote" << std::endl;
+                std::cout << m_id << " Got request vote as follower" << std::endl;
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                 }
@@ -148,13 +149,13 @@ void raft::Node::request_vote(const std::string &address) {
     request_vote_rpc.last_log_term = m_state.get_last_log_term();
 
     m_client->request_vote(address, request_vote_rpc, [this](const RequestVoteResponse &response) {
-        RequestVoteResponseEvent request_vote_event{};
-        request_vote_event.term = response.term;
-        request_vote_event.vote_granted = response.vote_granted;
-        request_vote_event.address = response.address;
-        request_vote_event.success = response.success;
+        RequestVoteResponseEvent request_vote_response_event{};
+        request_vote_response_event.term = response.term;
+        request_vote_response_event.vote_granted = response.vote_granted;
+        request_vote_response_event.address = response.address;
+        request_vote_response_event.success = response.success;
 
-        m_event_queue.push(request_vote_event);
+        m_event_queue.push(request_vote_response_event);
     });
 }
 
@@ -164,7 +165,9 @@ void raft::Node::start_election() {
         if (pair.first == m_id) {
             continue;
         }
+        std::cout << m_id << " Requesting Vote: " << pair.first << std::endl;
         request_vote(pair.second.address);
+        std::cout << m_id << " Finished Request to: " << pair.first << std::endl;
     }
 }
 
@@ -172,6 +175,7 @@ void raft::Node::run_candidate_loop() {
     // set to one since we vote for our self
     int votes_granted = 1;
     int quorum = calculate_quorum();
+
     start_election();
 
     bool should_exit = false;
@@ -180,7 +184,8 @@ void raft::Node::run_candidate_loop() {
         std::visit([this, &should_exit, &votes_granted, &quorum](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << "Election timeout: " << server_state_to_str(m_server_state) << " term: " << m_state.
+                std::cout << m_id << " Election timeout: " << server_state_to_str(m_server_state) << " term: " <<
+                        m_state.
                         get_current_term()
                         << std::endl;
                 become_candidate();
@@ -189,7 +194,8 @@ void raft::Node::run_candidate_loop() {
                 should_exit = true;
                 stop();
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << "GOT VOTE" << std::endl;
+                std::cout << m_id << " GOT VOTE: Vote Granted: " << arg.vote_granted << " Term: " << arg.term <<
+                        std::endl;
                 int term = arg.term;
                 bool vote_granted = arg.vote_granted;
                 std::string address = arg.address;
@@ -216,7 +222,7 @@ void raft::Node::run_candidate_loop() {
                     }
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << "Got request for vote" << std::endl;
+                std::cout << m_id << " Got request vote as candidate" << std::endl;
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                 }
@@ -264,14 +270,14 @@ void raft::Node::run_leader_loop() {
         std::visit([this, &should_exit](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << "WARNING: Got Election Timeout as a leader" << std::endl;
+                std::cout << m_id << " WARNING: Got Election Timeout as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << "WARNING: Got Request Vote Response as a leader" << std::endl;
+                std::cout << m_id << " WARNING: Got Request Vote Response as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << "Got request for vote" << std::endl;
+                std::cout << m_id << " Got request vote as a leader" << std::endl;
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                 }
@@ -363,10 +369,10 @@ std::string raft::server_state_to_str(ServerState state) {
 }
 
 void raft::Node::become_candidate() {
-    std::cout << "Became Candidate" << std::endl;
+    std::cout << m_id << " Became CANDIDATE" << std::endl;
     m_server_state = ServerState::CANDIDATE;
 
     m_state.increment_term();
-    m_state.set_voted_for(m_id);
+    m_state.set_voted_for(static_cast<int>(m_id));
     reset_election_timer();
 }

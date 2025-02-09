@@ -24,7 +24,6 @@ grpc::Status raft::RaftSeverImpl::HandleVoteRequest(grpc::ServerContext *context
             is_done = true;
         }
         cv.notify_one();
-        std::cout << "callback" << std::endl;
     };
 
     m_event_queue.push(request_vote_event);
@@ -35,6 +34,5 @@ grpc::Status raft::RaftSeverImpl::HandleVoteRequest(grpc::ServerContext *context
         cv.wait(lock, [&] { return is_done; });
     }
 
-    std::cout << "finished" << std::endl;
     return grpc::Status::OK;
 }
