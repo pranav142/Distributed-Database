@@ -14,6 +14,7 @@ raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_con
                                                    m_state("log_" + std::to_string(id) + ".txt"),
                                                    m_io(io),
                                                    m_election_timer(io),
+                                                   m_heartbeat_timer(io),
                                                    m_strand(boost::asio::make_strand(io)),
                                                    m_work_guard(boost::asio::make_work_guard(io)),
                                                    m_client(std::move(client)),
@@ -53,6 +54,29 @@ void raft::Node::reset_election_timer() {
     });
 }
 
+void raft::Node::reset_heartbeat_timer() {
+    // Thread safe way to modify the election timers
+    boost::asio::post(m_io, [this]() {
+        m_heartbeat_timer.cancel();
+
+        m_election_timer.expires_after(boost::asio::chrono::milliseconds(HEART_BEAT_INTERVAL_MS));
+        m_election_timer.async_wait([this](const boost::system::error_code &ec) {
+            if (!ec) {
+                m_event_queue.push(HeartBeatEvent{});
+            } else if (ec != boost::asio::error::operation_aborted) {
+                std::cout << "Heart beat timer error: " << ec.message() << std::endl;
+            }
+        });
+    });
+}
+
+
+void raft::Node::shut_down_heartbeat_timer() {
+    boost::asio::post(m_io, [this]() {
+        m_heartbeat_timer.cancel();
+    });
+}
+
 void raft::Node::initialize() {
     reset_election_timer();
 }
@@ -82,6 +106,7 @@ void raft::Node::become_follower(unsigned int term) {
     m_server_state = ServerState::FOLLOWER;
 
     reset_election_timer();
+    shut_down_heartbeat_timer();
     m_state.set_current_term(term);
     m_state.set_vote_for_no_one();
 }
@@ -92,6 +117,7 @@ void raft::Node::become_leader() {
 
     // No more election timeouts when leader
     shut_down_election_timer();
+    reset_heartbeat_timer();
     m_state.set_vote_for_no_one();
 }
 
@@ -110,6 +136,12 @@ void raft::Node::run_follower_loop() {
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 stop();
                 should_exit = true;
+            } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                // needs to be more complex for different term sizes
+                std::cout << "Got Append Entries from: " << arg.leader_id << std::endl;
+                reset_election_timer();
+            } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
+                std::cout << "WARNING: Got heartbeat as a follower" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << m_id << " WARNING: GOT VOTE AS FOLLOWER" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
@@ -206,6 +238,8 @@ void raft::Node::run_candidate_loop() {
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 should_exit = true;
                 stop();
+            } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
+                std::cout << "WARNING: Got heartbeat as a candidate" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << m_id << " GOT VOTE: Vote Granted: " << arg.vote_granted << " Term: " << arg.term <<
                         std::endl;
@@ -283,6 +317,23 @@ bool raft::Node::is_log_more_up_to_date(unsigned int last_log_index, unsigned in
     return false;
 }
 
+void raft::Node::append_entries(const std::string &address) {
+    AppendEntriesRPC append_entries_rpc;
+    append_entries_rpc.commit_index = 0;
+    append_entries_rpc.entries = "";
+    append_entries_rpc.leader_id = m_id;
+    append_entries_rpc.prev_log_index = 0;
+    append_entries_rpc.prev_log_term = 0;
+    append_entries_rpc.term = m_state.get_current_term();
+
+    m_client->append_entries(address, append_entries_rpc, [this](const AppendEntriesResponse &response) {
+        AppendEntriesResponseEvent event{};
+        event.term = static_cast<int>(response.term);
+        event.success = response.success;
+        m_event_queue.push(event);
+    });
+}
+
 void raft::Node::run_leader_loop() {
     bool should_exit = false;
 
@@ -295,6 +346,14 @@ void raft::Node::run_leader_loop() {
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 stop();
                 should_exit = true;
+            } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
+                for (auto &pair: m_cluster) {
+                    if (pair.first == m_id) {
+                        continue;
+                    }
+                    append_entries(pair.second.address);
+                }
+                reset_heartbeat_timer();
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << m_id << " WARNING: Got Request Vote Response as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {

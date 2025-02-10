@@ -15,11 +15,23 @@ public:
 
     void request_vote(std::string address, const raft::RequestVoteRPC &request_vote_rpc,
                       std::function<void(raft::RequestVoteResponse)> callback) override {
-        std::thread t([callback, request_vote_rpc, address]() {
+        std::thread t([callback, request_vote_rpc]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
             raft::RequestVoteResponse response{};
             response.term = static_cast<int>(request_vote_rpc.term);
             response.vote_granted = true;
+            callback(response);
+        });
+        t.detach();
+    }
+
+    void append_entries(std::string address, const raft::AppendEntriesRPC &append_entries,
+        std::function<void(raft::AppendEntriesResponse)> callback) override {
+        std::thread t([callback, append_entries]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
+            raft::AppendEntriesResponse response{};
+            response.term = static_cast<int>(append_entries.term);
+            response.success = true;
             callback(response);
         });
         t.detach();

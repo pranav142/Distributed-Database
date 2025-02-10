@@ -16,6 +16,9 @@ namespace raft {
     struct ElectionTimeoutEvent {
     };
 
+    struct HeartBeatEvent {
+    };
+
     struct RequestVoteResponseEvent {
         int term;
         bool vote_granted;
@@ -29,7 +32,23 @@ namespace raft {
         std::function<void(RequestVoteResponse)> callback;
     };
 
-    typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent, RequestVoteEvent> Event;
+    struct AppendEntriesEvent {
+        unsigned int term;
+        unsigned int leader_id;
+        unsigned int prev_log_index;
+        unsigned int prev_log_term;
+        std::string entries;
+        unsigned int commit_index;
+        std::function<void(AppendEntriesResponse)> callback;
+    };
+
+    struct AppendEntriesResponseEvent {
+        int term;
+        bool success;
+    };
+
+    typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent, RequestVoteEvent, AppendEntriesEvent
+        , HeartBeatEvent, AppendEntriesResponseEvent> Event;
 }
 
 #endif //EVENTS_H

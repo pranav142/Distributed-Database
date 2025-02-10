@@ -14,6 +14,21 @@ message RequestVoteResponse {
   bool vote_granted = 2;
 }
 
+message AppendEntries {
+  uint32 term = 1;
+  uint32 leader_id = 2;
+  uint32 prev_log_index = 3;
+  uint32 prev_log_term = 4;
+  string entries = 5;
+  uint32 commit_index = 6;
+}
+
+message AppendEntriesResponse {
+  uint32 term = 1;
+  bool success = 2;
+}
+
 service RaftService {
   rpc HandleVoteRequest(RequestVote) returns (RequestVoteResponse);
+  rpc HandleAppendEntries(AppendEntries) returns (AppendEntriesResponse);
 }

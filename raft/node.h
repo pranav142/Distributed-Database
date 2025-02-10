@@ -18,6 +18,7 @@
 namespace raft {
     constexpr int ELECTION_TIMER_MIN_MS = 150;
     constexpr int ELECTION_TIMER_MAX_MS = 300;
+    constexpr int HEART_BEAT_INTERVAL_MS = 30;
 
     enum class ServerState : int {
         FOLLOWER = 0,
@@ -38,6 +39,10 @@ namespace raft {
         unsigned int get_last_applied_index() const;
 
         void reset_election_timer();
+
+        void reset_heartbeat_timer();
+
+        void shut_down_heartbeat_timer();
 
         void run();
 
@@ -66,6 +71,8 @@ namespace raft {
 
         bool is_log_more_up_to_date(unsigned int last_log_index, unsigned int last_log_term) const;
 
+        void append_entries(const std::string &address);
+
         void run_leader_loop();
 
         int calculate_quorum() const;
@@ -93,6 +100,7 @@ namespace raft {
         // Timer Stuff
         boost::asio::io_context &m_io;
         boost::asio::steady_timer m_election_timer;
+        boost::asio::steady_timer m_heartbeat_timer;
 
         boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
         // Work guard is needed to keep the io context running even when there is no work

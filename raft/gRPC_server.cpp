@@ -36,3 +36,39 @@ grpc::Status raft::RaftSeverImpl::HandleVoteRequest(grpc::ServerContext *context
 
     return grpc::Status::OK;
 }
+
+grpc::Status raft::RaftSeverImpl::HandleAppendEntries(grpc::ServerContext *context,
+    const raft_gRPC::AppendEntries *request, raft_gRPC::AppendEntriesResponse *response) {
+     std::mutex mtx;
+    std::condition_variable cv;
+    bool is_done = false;
+
+    AppendEntriesEvent append_entries_event{};
+    append_entries_event.commit_index = request->commit_index();
+    append_entries_event.entries = request->entries();
+    append_entries_event.term = request->term();
+    append_entries_event.prev_log_index = request->prev_log_index();
+    append_entries_event.prev_log_term = request->prev_log_term();
+    append_entries_event.leader_id = request->leader_id();
+
+    append_entries_event.callback = [&response, &mtx, &cv, &is_done](const AppendEntriesResponse &_response) {
+        response->set_term(_response.term);
+        response->set_success(_response.success);
+        {
+            std::lock_guard lock(mtx);
+            is_done = true;
+        }
+        cv.notify_one();
+    };
+
+    m_event_queue.push(append_entries_event);
+
+    // waits until the response has been populated
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&] { return is_done; });
+    }
+
+    return grpc::Status::OK;
+}
+

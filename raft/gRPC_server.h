@@ -14,16 +14,18 @@
 namespace raft {
     class RaftSeverImpl final : public raft_gRPC::RaftService::Service {
     public:
-       explicit RaftSeverImpl(EventQueue<Event> &event_queue)
+        explicit RaftSeverImpl(EventQueue<Event> &event_queue)
             : m_event_queue(event_queue) {
         }
 
         grpc::Status HandleVoteRequest(grpc::ServerContext *context, const raft_gRPC::RequestVote *request_vote,
                                        raft_gRPC::RequestVoteResponse *response) override;
 
+        grpc::Status HandleAppendEntries(grpc::ServerContext *context, const raft_gRPC::AppendEntries *request,
+                                         raft_gRPC::AppendEntriesResponse *response) override;
+
     private:
         EventQueue<Event> &m_event_queue;
-
     };
 }
 

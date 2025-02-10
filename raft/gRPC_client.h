@@ -8,8 +8,29 @@
 #include "proto/raft.grpc.pb.h"
 #include "client.h"
 #include <thread>
+#include <boost/type.hpp>
 
 namespace raft {
+    enum class RPCType {
+        REQUEST_VOTE,
+        APPEND_ENTRIES,
+    };
+
+    struct AsyncCallBase {
+        RPCType type;
+
+        virtual ~AsyncCallBase() = default;
+    };
+
+    template<typename T, typename U>
+    struct AsyncCall final : public AsyncCallBase {
+        U reply;
+        grpc::ClientContext context;
+        grpc::Status status;
+        std::unique_ptr<raft_gRPC::RaftService::Stub> stub;
+        std::unique_ptr<grpc::ClientAsyncResponseReader<U> > response_reader;
+        std::function<void(T)> callback;
+    };
 
     class gRPCClient : public Client {
     public:
@@ -31,16 +52,15 @@ namespace raft {
         void request_vote(std::string address, const RequestVoteRPC &request_vote_rpc,
                           std::function<void(RequestVoteResponse)> callback) override;
 
+        void append_entries(std::string address, const AppendEntriesRPC &append_entries,
+                            std::function<void(AppendEntriesResponse)> callback) override;
+
     private:
-        struct AsyncCall {
-            raft_gRPC::RequestVoteResponse reply;
-            grpc::ClientContext context;
-            grpc::Status status;
-            std::unique_ptr<raft_gRPC::RaftService::Stub> stub;
-            std::unique_ptr<grpc::ClientAsyncResponseReader<raft_gRPC::RequestVoteResponse> > response_reader;
-            std::function<void(RequestVoteResponse)> callback;
-            std::string address;
-        };
+        void handle_request_vote_rpc(const AsyncCall<RequestVoteResponse, raft_gRPC::RequestVoteResponse> *call,
+                                     bool ok) const;
+
+        void handle_append_entries_rpc(const AsyncCall<AppendEntriesResponse, raft_gRPC::AppendEntriesResponse> *call,
+                                       bool ok) const;
 
         void async_complete_rpc() const;
 
