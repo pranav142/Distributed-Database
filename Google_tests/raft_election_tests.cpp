@@ -17,10 +17,8 @@ public:
                       std::function<void(raft::RequestVoteResponse)> callback) override {
         std::thread t([callback, request_vote_rpc, address]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
-            raft::RequestVoteResponse response;
+            raft::RequestVoteResponse response{};
             response.term = static_cast<int>(request_vote_rpc.term);
-            response.address = address;
-            response.success = true;
             response.vote_granted = true;
             callback(response);
         });
@@ -75,7 +73,7 @@ TEST(ElectionTest, RequestVoteTest) {
         std::cout << "requesting vote: " << cluster_map[1].address << std::endl;
         client.request_vote(cluster_map[1].address, request_vote,
                             [&success](const raft::RequestVoteResponse &response) {
-                                success = response.success;
+                                success = response.term != -1;
                             });
     });
 

@@ -19,8 +19,6 @@ namespace raft {
     struct RequestVoteResponseEvent {
         int term;
         bool vote_granted;
-        bool success;
-        std::string address;
     };
 
     struct RequestVoteEvent {

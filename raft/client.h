@@ -23,8 +23,6 @@ namespace raft {
     struct RequestVoteResponse {
         int term; // term of the voter
         bool vote_granted;
-        bool success; // indicates if the response was a success
-        std::string address; // address of the voter
     };
 
     class Client {

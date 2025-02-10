@@ -83,21 +83,21 @@ void raft::Node::become_follower(unsigned int term) {
 
     reset_election_timer();
     m_state.set_current_term(term);
-
-    // Vote focanr no one
-    m_state.set_voted_for(-1);
+    m_state.set_vote_for_no_one();
 }
 
 void raft::Node::become_leader() {
     std::cout << m_id << " Became LEADER" << std::endl;
     m_server_state = ServerState::LEADER;
 
-    m_state.set_voted_for(-1);
+    // No more election timeouts when leader
+    shut_down_election_timer();
+    m_state.set_vote_for_no_one();
 }
 
 void raft::Node::run_follower_loop() {
     bool should_exit = false;
-    while (m_server_state == ServerState::FOLLOWER) {
+    while (m_server_state == ServerState::FOLLOWER && !should_exit) {
         Event event = m_event_queue.pop();
         std::visit([this, &should_exit](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
@@ -107,7 +107,6 @@ void raft::Node::run_follower_loop() {
                         get_current_term()
                         << std::endl;
                 become_candidate();
-                should_exit = true;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 stop();
                 should_exit = true;
@@ -115,29 +114,47 @@ void raft::Node::run_follower_loop() {
                 std::cout << m_id << " WARNING: GOT VOTE AS FOLLOWER" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
                 std::cout << m_id << " Got request vote as follower" << std::endl;
-                if (arg.term > m_state.get_current_term()) {
-                    become_follower(arg.term);
+
+                // If the request has a lower term
+                // immediately deny the vote
+                if (arg.term < m_state.get_current_term()) {
+                    RequestVoteResponse response{};
+                    response.vote_granted = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    arg.callback(response);
+                    should_exit = true;
+                    return;
                 }
 
-                RequestVoteResponse request_vote_response{};
-                request_vote_response.address = m_cluster[m_id].address;
-                request_vote_response.success = true;
-                request_vote_response.vote_granted = false;
-                request_vote_response.term = static_cast<int>(m_state.get_current_term());
+                // If a valid RPC is sent
+                // prevent unnecessary election
+                reset_election_timer();
 
-                // if we haven't voted then cast a vote
-                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term) && m_state.get_voted_for() != -1) {
-                    request_vote_response.vote_granted = true;
+                // If the request has a higher term
+                // update our term and indicate we haven't cast
+                // a vote for new term
+                if (arg.term > m_state.get_current_term()) {
+                    m_state.set_current_term(arg.term);
+                    m_state.set_voted_for(-1);
+                }
+
+                RequestVoteResponse response{};
+                response.vote_granted = false;
+                response.term = static_cast<int>(m_state.get_current_term());
+
+                // If no vote has been cast
+                // or already voted for candidate
+                // only grant vote if the log is as much
+                // or more up to date
+                if ((m_state.has_voted_for_no_one() || m_state.get_voted_for() == arg.candidate_id) &&
+                    is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                    response.vote_granted = true;
                     m_state.set_voted_for(arg.candidate_id);
                 }
 
-                arg.callback(request_vote_response);
+                arg.callback(response);
             }
         }, event);
-
-        if (should_exit) {
-            return;
-        }
     }
 }
 
@@ -152,8 +169,6 @@ void raft::Node::request_vote(const std::string &address) {
         RequestVoteResponseEvent request_vote_response_event{};
         request_vote_response_event.term = response.term;
         request_vote_response_event.vote_granted = response.vote_granted;
-        request_vote_response_event.address = response.address;
-        request_vote_response_event.success = response.success;
 
         m_event_queue.push(request_vote_response_event);
     });
@@ -161,13 +176,11 @@ void raft::Node::request_vote(const std::string &address) {
 
 void raft::Node::start_election() {
     for (auto &pair: m_cluster) {
-        // skip sending vote to ourselves
+        // skip sending vote to self
         if (pair.first == m_id) {
             continue;
         }
-        std::cout << m_id << " Requesting Vote: " << pair.first << std::endl;
         request_vote(pair.second.address);
-        std::cout << m_id << " Finished Request to: " << pair.first << std::endl;
     }
 }
 
@@ -196,26 +209,20 @@ void raft::Node::run_candidate_loop() {
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << m_id << " GOT VOTE: Vote Granted: " << arg.vote_granted << " Term: " << arg.term <<
                         std::endl;
-                int term = arg.term;
-                bool vote_granted = arg.vote_granted;
-                std::string address = arg.address;
-                bool success = arg.success;
 
-
-                // Request vote again if failed
-                if (!success) {
-                    request_vote(address);
-                    should_exit = true;
-                }
-                // term cannot be less than candidates term
+                // term from voter cannot be less than candidates term
                 // unless this a response meant for a previous election
-                else if (term < m_state.get_current_term()) {
-                    std::cout << "Received a outdated request vote response" << std::endl;
+                if (arg.term < m_state.get_current_term()) {
+                    std::cout << "WARNING: Received a outdated request vote response" << std::endl;
+                    return;
                 }
-                // step down if a higher term is found
-                else if (term > m_state.get_current_term()) {
-                    become_follower(term);
-                } else if (vote_granted) {
+
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                    return;
+                }
+
+                if (arg.vote_granted) {
                     votes_granted++;
                     if (votes_granted >= quorum) {
                         become_leader();
@@ -223,22 +230,36 @@ void raft::Node::run_candidate_loop() {
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
                 std::cout << m_id << " Got request vote as candidate" << std::endl;
+
+                // if the term is lower
+                // immediately deny the vote
+                if (arg.term < m_state.get_current_term()) {
+                    RequestVoteResponse response{};
+                    response.vote_granted = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    arg.callback(response);
+                    return;
+                }
+
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
+                    RequestVoteResponse response{};
+                    response.vote_granted = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                        response.vote_granted = true;
+                        m_state.set_voted_for(arg.candidate_id);
+                    }
+                    arg.callback(response);
+                    return;
                 }
 
+                // this is the case when the term of request
+                // is equal to the term of the candidate
+                // in which case we deny the vote
                 RequestVoteResponse request_vote_response{};
-                request_vote_response.address = m_cluster[m_id].address;
-                request_vote_response.success = true;
                 request_vote_response.vote_granted = false;
                 request_vote_response.term = static_cast<int>(m_state.get_current_term());
-
-                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
-                    become_follower(arg.term);
-                    request_vote_response.vote_granted = true;
-                    m_state.set_voted_for(arg.candidate_id);
-                }
-
                 arg.callback(request_vote_response);
             }
         }, event);
@@ -278,23 +299,34 @@ void raft::Node::run_leader_loop() {
                 std::cout << m_id << " WARNING: Got Request Vote Response as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
                 std::cout << m_id << " Got request vote as a leader" << std::endl;
+
+                if (arg.term < m_state.get_current_term()) {
+                    RequestVoteResponse response{};
+                    response.vote_granted = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    arg.callback(response);
+                    return;
+                }
+
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
+                    RequestVoteResponse response{};
+                    response.vote_granted = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                        response.vote_granted = true;
+                        m_state.set_voted_for(arg.candidate_id);
+                    }
+                    arg.callback(response);
+                    return;
                 }
 
-                RequestVoteResponse request_vote_response{};
-                request_vote_response.address = m_cluster[m_id].address;
-                request_vote_response.success = true;
-                request_vote_response.vote_granted = false;
-                request_vote_response.term = static_cast<int>(m_state.get_current_term());
-
-                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
-                    become_follower(arg.term);
-                    request_vote_response.vote_granted = true;
-                    m_state.set_voted_for(arg.candidate_id);
-                }
-
-                arg.callback(request_vote_response);
+                // if the term is equal
+                // reject the request to vote
+                RequestVoteResponse response{};
+                response.vote_granted = false;
+                response.term = static_cast<int>(m_state.get_current_term());
+                arg.callback(response);
             }
         }, event);
 

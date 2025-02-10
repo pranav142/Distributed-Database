@@ -31,15 +31,12 @@ void raft::gRPCClient::async_complete_rpc() const {
         auto *call = static_cast<AsyncCall *>(tag);
 
         RequestVoteResponse response;
-        response.address = call->address;
         if (ok && call->status.ok()) {
             response.term = static_cast<int>(call->reply.term());
             response.vote_granted = call->reply.vote_granted();
-            response.success = true;
         } else {
             response.term = 0;
             response.vote_granted = false;
-            response.success = false;
         }
         call->callback(response);
 

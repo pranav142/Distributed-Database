@@ -41,6 +41,10 @@ namespace raft {
 
         ErrorCode load_state();
 
+        [[nodiscard]] bool has_voted_for_no_one() const;
+
+        void set_vote_for_no_one();
+
     private:
         unsigned int m_current_term = 0;
 

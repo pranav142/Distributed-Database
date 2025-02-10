@@ -147,3 +147,11 @@ raft::ErrorCode raft::PersistentState::load_state() {
 
     return SUCCESS;
 }
+
+bool raft::PersistentState::has_voted_for_no_one() const {
+    return m_voted_for == -1;
+}
+
+void raft::PersistentState::set_vote_for_no_one()  {
+    m_voted_for = -1;
+}
