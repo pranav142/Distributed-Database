@@ -37,6 +37,10 @@ unsigned int raft::Node::get_last_applied_index() const {
     return m_last_applied_index;
 }
 
+unsigned int raft::Node::get_current_term() const {
+    return m_state.get_current_term();
+}
+
 void raft::Node::reset_election_timer() {
     // Thread safe way to modify the election timers
     boost::asio::post(m_io, [this]() {
@@ -137,9 +141,29 @@ void raft::Node::run_follower_loop() {
                 stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
-                // needs to be more complex for different term sizes
-                std::cout << "Got Append Entries from: " << arg.leader_id << std::endl;
+                // the term of request is lower deny it
+                if (arg.term < m_state.get_current_term()) {
+                    AppendEntriesResponse response{};
+                    response.success = false;
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    return;
+                }
+
+                // if the term is higher adjust the term
+                // and set bote for no one to indicate no vote has been
+                // cast for this term
+                if (arg.term > m_state.get_current_term()) {
+                    m_state.set_current_term(arg.term);
+                    m_state.set_vote_for_no_one();
+                }
+
                 reset_election_timer();
+                AppendEntriesResponse response{};
+                response.success = true;
+                response.term = m_state.get_current_term();
+                arg.callback(response);
+            } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
+                std::cout << "WARNING: Got append entries response as a follower" << std::endl;
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
                 std::cout << "WARNING: Got heartbeat as a follower" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
@@ -238,6 +262,25 @@ void raft::Node::run_candidate_loop() {
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 should_exit = true;
                 stop();
+            } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                if (arg.term < m_state.get_current_term()) {
+                    AppendEntriesResponse response{};
+                    response.term = m_state.get_current_term();
+                    response.success = false;
+                    arg.callback(response);
+                    return;
+                }
+
+                // If a append entry is at least as large
+                // as the candidates term become follower
+                // and accept leader
+                AppendEntriesResponse response{};
+                become_follower(arg.term);
+                response.term = m_state.get_current_term();
+                response.success = true;
+                arg.callback(response);
+            } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
+                std::cout << "WARNING: Got append entries response as a candidate" << std::endl;
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
                 std::cout << "WARNING: Got heartbeat as a candidate" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
@@ -354,6 +397,40 @@ void raft::Node::run_leader_loop() {
                     append_entries(pair.second.address);
                 }
                 reset_heartbeat_timer();
+            } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                if (arg.term < m_state.get_current_term()) {
+                    AppendEntriesResponse response{};
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.success = false;
+                    arg.callback(response);
+                    return;
+                }
+
+                // if the append entries term is higher
+                // demote to follower and accept the
+                // new leader
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                    AppendEntriesResponse response{};
+                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.success = true;
+                    arg.callback(response);
+                    return;
+                }
+
+                // This is the case where the term is equal
+                // if this occurred there is some serious issue
+                // in the implementation
+                std::cout << "ERROR: Received a append entries of equal term. Denying Request!" << std::endl;
+                AppendEntriesResponse response{};
+                response.term = static_cast<int>(m_state.get_current_term());
+                response.success = false;
+                arg.callback(response);
+            } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                    return;
+                }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 std::cout << m_id << " WARNING: Got Request Vote Response as a leader" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {

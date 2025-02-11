@@ -38,6 +38,8 @@ namespace raft {
 
         unsigned int get_last_applied_index() const;
 
+        unsigned int get_current_term() const;
+
         void reset_election_timer();
 
         void reset_heartbeat_timer();

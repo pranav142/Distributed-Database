@@ -26,7 +26,7 @@ public:
     }
 
     void append_entries(std::string address, const raft::AppendEntriesRPC &append_entries,
-        std::function<void(raft::AppendEntriesResponse)> callback) override {
+                        std::function<void(raft::AppendEntriesResponse)> callback) override {
         std::thread t([callback, append_entries]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
             raft::AppendEntriesResponse response{};
@@ -127,12 +127,12 @@ TEST(ElectionTest, NodeElectionTest) {
     raft::Node node_3(3, cluster_map, ctx3, std::move(client3));
 
 
-   std::thread stop_thread([&]() {
-       std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
-       node_1.cancel();
-       node_2.cancel();
-       node_3.cancel();
-   });
+    std::thread stop_thread([&]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(3 * raft::ELECTION_TIMER_MAX_MS));
+        node_1.cancel();
+        node_2.cancel();
+        node_3.cancel();
+    });
 
     std::thread n1([&node_1]() {
         node_1.run();
@@ -150,4 +150,12 @@ TEST(ElectionTest, NodeElectionTest) {
     n2.join();
     n3.join();
     stop_thread.join();
+
+    // Ensure there is only one leader
+    GTEST_ASSERT_TRUE(
+        node_1.get_server_state() == raft::ServerState::LEADER ^ node_2.get_server_state() == raft::ServerState::LEADER
+        ^ node_3.get_server_state() == raft::ServerState::LEADER);
+
+    // Ensure each node is the same term
+    GTEST_ASSERT_TRUE(node_1.get_current_term() == node_2.get_current_term() && node_1.get_current_term() ==  node_3.get_current_term());
 }

@@ -224,13 +224,6 @@
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/raft.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/raft.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/client.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/events.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/events.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_server.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/gRPC_server.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_server.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
     </list>
@@ -334,7 +327,7 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Google Test.ElectionTest.NodeElectionTest">
+  <component name="RunManager" selected="Google Test.ElectionTest.CoreElectionLogic">
     <configuration name="ElectionTest.CoreElectionLogic" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="CoreElectionLogic" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -1576,9 +1569,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
         <item itemvalue="Google Test.ElectionTest.NodeElectionTest" />
         <item itemvalue="Google Test.ElectionTest.RequestVoteTest" />
-        <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
         <item itemvalue="Google Test.ElectionTest.SuccessfulCandidateTransition" />
         <item itemvalue="Google Test.ReplaceLineTest.HandlesValidReplacement" />
       </list>
@@ -1606,6 +1599,7 @@
       <workItem from="1738995472590" duration="5423000" />
       <workItem from="1739059758393" duration="16589000" />
       <workItem from="1739166741332" duration="8792000" />
+      <workItem from="1739302994178" duration="1890000" />
     </task>
     <servers />
   </component>
