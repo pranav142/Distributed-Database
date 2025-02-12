@@ -8,18 +8,7 @@
 #include "gRPC_server.h"
 #include "utils.h"
 
-raft::Node::Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
-                 std::unique_ptr<Client> client) : m_id(id),
-                                                   m_cluster(cluster),
-                                                   m_state("log_" + std::to_string(id) + ".txt"),
-                                                   m_io(io),
-                                                   m_election_timer(io),
-                                                   m_heartbeat_timer(io),
-                                                   m_strand(boost::asio::make_strand(io)),
-                                                   m_work_guard(boost::asio::make_work_guard(io)),
-                                                   m_client(std::move(client)),
-                                                   m_server(nullptr) {
-}
+
 
 raft::ServerState raft::Node::get_server_state() const {
     return m_server_state;
@@ -41,54 +30,54 @@ unsigned int raft::Node::get_current_term() const {
     return m_state.get_current_term();
 }
 
-void raft::Node::reset_election_timer() {
-    // Thread safe way to modify the election timers
-    boost::asio::post(m_io, [this]() {
-        m_election_timer.cancel();
+void raft::Node::set_current_term(unsigned int term) {
+    m_state.set_current_term(term);
+}
 
-        unsigned int random_time_ms = generate_random_number(ELECTION_TIMER_MIN_MS, ELECTION_TIMER_MAX_MS);
-        m_election_timer.expires_after(boost::asio::chrono::milliseconds(random_time_ms));
-        m_election_timer.async_wait([this](const boost::system::error_code &ec) {
-            if (!ec) {
-                m_event_queue.push(ElectionTimeoutEvent{});
-            } else if (ec != boost::asio::error::operation_aborted) {
-                std::cout << "Election timer error: " << ec.message() << std::endl;
-            }
-        });
+void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
+    if (!ec) {
+        m_event_queue.push(ElectionTimeoutEvent{});
+    } else if (ec != boost::asio::error::operation_aborted) {
+        std::cout << "Election timer error: " << ec.message() << std::endl;
+    }
+}
+
+void raft::Node::reset_election_timer() {
+    unsigned int random_time_ms = generate_random_number(ELECTION_TIMER_MIN_MS, ELECTION_TIMER_MAX_MS);
+    m_election_timer.set(random_time_ms, [this](const boost::system::error_code &ec) {
+        on_election_timeout(ec);
     });
 }
 
-void raft::Node::reset_heartbeat_timer() {
-    // Thread safe way to modify the election timers
-    boost::asio::post(m_io, [this]() {
-        m_heartbeat_timer.cancel();
+void raft::Node::on_heartbeat_timeout(const boost::system::error_code &ec) {
+    if (!ec) {
+        m_event_queue.push(HeartBeatEvent{});
+    } else if (ec != boost::asio::error::operation_aborted) {
+        std::cout << "Election timer error: " << ec.message() << std::endl;
+    }
+}
 
-        m_election_timer.expires_after(boost::asio::chrono::milliseconds(HEART_BEAT_INTERVAL_MS));
-        m_election_timer.async_wait([this](const boost::system::error_code &ec) {
-            if (!ec) {
-                m_event_queue.push(HeartBeatEvent{});
-            } else if (ec != boost::asio::error::operation_aborted) {
-                std::cout << "Heart beat timer error: " << ec.message() << std::endl;
-            }
-        });
+void raft::Node::reset_heartbeat_timer() {
+    m_heartbeat_timer.set(HEART_BEAT_INTERVAL_MS, [this](const boost::system::error_code &ec) {
+        on_heartbeat_timeout(ec);
     });
 }
 
 
 void raft::Node::shut_down_heartbeat_timer() {
-    boost::asio::post(m_io, [this]() {
-        m_heartbeat_timer.cancel();
-    });
+    m_heartbeat_timer.cancel();
 }
 
 void raft::Node::initialize() {
-    reset_election_timer();
+    if (m_server_state == ServerState::LEADER) {
+        reset_heartbeat_timer();
+    } else {
+        reset_election_timer();
+    }
 }
 
 void raft::Node::shut_down_election_timer() {
-    boost::asio::post(m_io, [this]() {
-        m_election_timer.cancel();
-    });
+    m_election_timer.cancel();
 }
 
 void raft::Node::cancel() {
@@ -101,6 +90,7 @@ void raft::Node::stop() {
         m_server->Shutdown();
     }
     shut_down_election_timer();
+    shut_down_heartbeat_timer();
     m_work_guard.reset();
     m_io.stop();
 }
@@ -167,7 +157,13 @@ void raft::Node::run_follower_loop() {
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
                 std::cout << "WARNING: Got heartbeat as a follower" << std::endl;
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << m_id << " WARNING: GOT VOTE AS FOLLOWER" << std::endl;
+                // This response was from when we were a candidate
+                // but if that response is higher, then immediately
+                // update to that higher term
+                if (arg.term > m_state.get_current_term()) {
+                    m_state.set_current_term(arg.term);
+                    m_state.set_vote_for_no_one();
+                }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
                 std::cout << m_id << " Got request vote as follower" << std::endl;
 
@@ -271,7 +267,7 @@ void raft::Node::run_candidate_loop() {
                     return;
                 }
 
-                // If a append entry is at least as large
+                // If an append entry is at least as large
                 // as the candidates term become follower
                 // and accept leader
                 AppendEntriesResponse response{};
@@ -432,7 +428,12 @@ void raft::Node::run_leader_loop() {
                     return;
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << m_id << " WARNING: Got Request Vote Response as a leader" << std::endl;
+                std::cout << m_id << " WARNING: Got Request Response as a leader" << std::endl;
+                // if a response is of a higher term go back to
+                // the follower state of that term
+                if (arg.term > m_state.get_current_term()) {
+                    become_follower(arg.term);
+                }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
                 std::cout << m_id << " Got request vote as a leader" << std::endl;
 
@@ -472,7 +473,7 @@ void raft::Node::run_leader_loop() {
     }
 }
 
-// calculates number of votes needed to win a election
+// calculates number of votes needed to win an election
 int raft::Node::calculate_quorum() const {
     int num_voters = static_cast<int>(m_cluster.size());
     return num_voters / 2 + 1;

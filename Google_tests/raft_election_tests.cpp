@@ -106,6 +106,7 @@ TEST(ElectionTest, RequestVoteTest) {
     GTEST_ASSERT_TRUE(success);
 }
 
+
 TEST(ElectionTest, NodeElectionTest) {
     auto client1 = std::make_unique<raft::gRPCClient>();
     auto client2 = std::make_unique<raft::gRPCClient>();
@@ -117,18 +118,28 @@ TEST(ElectionTest, NodeElectionTest) {
         {3, raft::NodeInfo{"127.0.0.1:4206"}},
     };
 
+    // this node will time out last but should still end up as the leader
+    // by setting the min and max election time to same value
+    // we set exactly how frequently the node will be timing out
     boost::asio::io_context ctx1;
-    raft::Node node_1(1, cluster_map, ctx1, std::move(client1));
+    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
+                      raft::ELECTION_TIMER_MAX_MS);
+    node_1.set_current_term(10);
+
+    // these nodes will timeout first but should not end up as leader
 
     boost::asio::io_context ctx2;
-    raft::Node node_2(2, cluster_map, ctx2, std::move(client2));
+    raft::Node node_2(2, cluster_map, ctx2, std::move(client2), raft::ELECTION_TIMER_MIN_MS,
+                      raft::ELECTION_TIMER_MIN_MS);
+    node_2.set_current_term(8);
 
     boost::asio::io_context ctx3;
-    raft::Node node_3(3, cluster_map, ctx3, std::move(client3));
-
+    raft::Node node_3(3, cluster_map, ctx3, std::move(client3), raft::ELECTION_TIMER_MIN_MS,
+                      raft::ELECTION_TIMER_MIN_MS);
+    node_3.set_current_term(8);
 
     std::thread stop_thread([&]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(3 * raft::ELECTION_TIMER_MAX_MS));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
         node_2.cancel();
         node_3.cancel();
@@ -152,10 +163,13 @@ TEST(ElectionTest, NodeElectionTest) {
     stop_thread.join();
 
     // Ensure there is only one leader
-    GTEST_ASSERT_TRUE(
-        node_1.get_server_state() == raft::ServerState::LEADER ^ node_2.get_server_state() == raft::ServerState::LEADER
-        ^ node_3.get_server_state() == raft::ServerState::LEADER);
+    GTEST_ASSERT_TRUE(node_1.get_server_state() == raft::ServerState::LEADER);
+    GTEST_ASSERT_TRUE(node_2.get_server_state() != raft::ServerState::LEADER);
+    GTEST_ASSERT_TRUE(node_3.get_server_state() != raft::ServerState::LEADER);
 
     // Ensure each node is the same term
-    GTEST_ASSERT_TRUE(node_1.get_current_term() == node_2.get_current_term() && node_1.get_current_term() ==  node_3.get_current_term());
+    GTEST_ASSERT_TRUE(
+        node_1.get_current_term() == node_2.get_current_term() &&
+        node_1.get_current_term() == node_3.get_current_term(
+        ));
 }

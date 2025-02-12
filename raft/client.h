@@ -36,10 +36,7 @@ namespace raft {
         bool success;
     };
 
-    // Virtual Class that enables raft to use a variety
-    // of networking protocols, and enables the tester to effectively
-    // Mock responses
-
+    // Client Interface
     class Client {
     public:
         virtual ~Client() = 0;

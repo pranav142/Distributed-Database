@@ -49,6 +49,8 @@ set(RAFT_FILES
         raft/gRPC_server.cpp
         raft/gRPC_server.h
         raft/client.cpp
+        raft/timer.cpp
+        raft/timer.h
 )
 
 add_library(raft

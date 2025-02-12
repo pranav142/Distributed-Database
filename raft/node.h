@@ -6,13 +6,13 @@
 #define NODE_H
 
 #include <vector>
-#include <boost/asio.hpp>
 #include "cluster.h"
 #include "events.h"
 #include "event_queue.h"
 #include "persistent_state.h"
 #include "client.h"
 #include "gRPC_server.h"
+#include "timer.h"
 
 
 namespace raft {
@@ -28,7 +28,24 @@ namespace raft {
 
     class Node {
     public:
-        Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io, std::unique_ptr<Client> client);
+        Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
+                   std::unique_ptr<Client> client, unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
+                   unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
+                   unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS) : m_id(id),
+            m_state(
+                "log_" + std::to_string(id) + ".txt"),
+            m_cluster(cluster),
+            m_io(io),
+            m_election_timer(io),
+            m_heartbeat_timer(io),
+            m_strand(make_strand(io)),
+            m_work_guard(
+                make_work_guard(io)),
+            m_client(std::move(client)),
+            m_election_timer_max_ms(election_timer_max_ms),
+            m_election_timer_min_ms(election_timer_min_ms),
+            m_heart_beat_interval_ms(heartbeat_interval_ms) {
+        }
 
         ServerState get_server_state() const;
 
@@ -40,7 +57,13 @@ namespace raft {
 
         unsigned int get_current_term() const;
 
+        void set_current_term(unsigned int term);
+
+        void on_election_timeout(const boost::system::error_code &ec);
+
         void reset_election_timer();
+
+        void on_heartbeat_timeout(const boost::system::error_code &ec);
 
         void reset_heartbeat_timer();
 
@@ -99,18 +122,21 @@ namespace raft {
         EventQueue<Event> m_event_queue;
         bool m_running = false;
 
-        // Timer Stuff
+        // Time
         boost::asio::io_context &m_io;
-        boost::asio::steady_timer m_election_timer;
-        boost::asio::steady_timer m_heartbeat_timer;
+        Timer m_election_timer;
+        Timer m_heartbeat_timer;
+        unsigned int m_election_timer_min_ms;
+        unsigned int m_election_timer_max_ms;
+        unsigned int m_heart_beat_interval_ms;
 
         boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
         // Work guard is needed to keep the io context running even when there is no work
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
 
-        std::unique_ptr<Client> m_client;
-        std::unique_ptr<grpc::Server> m_server;
-        std::unique_ptr<RaftSeverImpl> m_service;
+        std::unique_ptr<Client> m_client = nullptr;
+        std::unique_ptr<RaftSeverImpl> m_service = nullptr;
+        std::unique_ptr<grpc::Server> m_server = nullptr;
     };
 
     std::string server_state_to_str(ServerState state);
