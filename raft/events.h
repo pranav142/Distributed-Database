@@ -20,7 +20,7 @@ namespace raft {
     };
 
     struct RequestVoteResponseEvent {
-        int term;
+        unsigned int term;
         bool vote_granted;
     };
 
@@ -43,7 +43,7 @@ namespace raft {
     };
 
     struct AppendEntriesResponseEvent {
-        int term;
+        unsigned int term;
         bool success;
     };
 

@@ -18,8 +18,9 @@ namespace raft {
     };
 
     struct RequestVoteResponse {
-        int term;
+        unsigned int term;
         bool vote_granted;
+        bool error;
     };
 
     struct AppendEntriesRPC {
@@ -34,6 +35,7 @@ namespace raft {
     struct AppendEntriesResponse {
         unsigned int term;
         bool success;
+        bool error;
     };
 
     // Client Interface

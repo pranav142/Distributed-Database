@@ -217,7 +217,11 @@ void raft::Node::request_vote(const std::string &address) {
     request_vote_rpc.last_log_index = m_state.get_last_log_index();
     request_vote_rpc.last_log_term = m_state.get_last_log_term();
 
-    m_client->request_vote(address, request_vote_rpc, [this](const RequestVoteResponse &response) {
+    m_client->request_vote(address, request_vote_rpc, [this, address](const RequestVoteResponse &response) {
+        if (response.error) {
+            std::cout << m_id << " ERROR: Request vote failed to: " << address << std::endl;
+            return;
+        }
         RequestVoteResponseEvent request_vote_response_event{};
         request_vote_response_event.term = response.term;
         request_vote_response_event.vote_granted = response.vote_granted;
@@ -365,7 +369,11 @@ void raft::Node::append_entries(const std::string &address) {
     append_entries_rpc.prev_log_term = 0;
     append_entries_rpc.term = m_state.get_current_term();
 
-    m_client->append_entries(address, append_entries_rpc, [this](const AppendEntriesResponse &response) {
+    m_client->append_entries(address, append_entries_rpc, [this, address](const AppendEntriesResponse &response) {
+        if (response.error) {
+            std::cout << m_id << " ERROR: append entries failed to: " << address << std::endl;
+            return;
+        }
         AppendEntriesResponseEvent event{};
         event.term = static_cast<int>(response.term);
         event.success = response.success;

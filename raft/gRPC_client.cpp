@@ -29,9 +29,11 @@ void raft::gRPCClient::handle_request_vote_rpc(
     if (ok && call->status.ok()) {
         response.term = static_cast<int>(call->reply.term());
         response.vote_granted = call->reply.vote_granted();
+        response.error = false;
     } else {
-        response.term = -1;
+        response.term = 0;
         response.vote_granted = false;
+        response.error = true;
     }
     call->callback(response);
 }
@@ -61,10 +63,10 @@ void raft::gRPCClient::handle_append_entries_rpc(
     AppendEntriesResponse response{};
 
     if (ok && call->status.ok()) {
-        response.term = static_cast<int>(call->reply.term());
+        response.term = call->reply.term();
         response.success = call->reply.success();
     } else {
-        response.term = -1;
+        response.term = 0;
         response.success = false;
     }
 

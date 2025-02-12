@@ -173,3 +173,41 @@ TEST(ElectionTest, NodeElectionTest) {
         node_1.get_current_term() == node_3.get_current_term(
         ));
 }
+
+// This test is for handling the case
+// where a node loses communication with other nodes
+// and is essentially in a minority parition
+TEST(ElectionTest, HandlesOfflineNodesTest) {
+    auto client1 = std::make_unique<raft::gRPCClient>();
+    auto client2 = std::make_unique<raft::gRPCClient>();
+    auto client3 = std::make_unique<raft::gRPCClient>();
+
+    raft::ClusterMap cluster_map{
+            {1, raft::NodeInfo{"127.0.0.1:6969"}},
+            {2, raft::NodeInfo{"127.0.0.1:7070"}},
+            {3, raft::NodeInfo{"127.0.0.1:4206"}},
+        };
+
+    // this node will time out last but should still end up as the leader
+    // by setting the min and max election time to same value
+    // we set exactly how frequently the node will be timing out
+    boost::asio::io_context ctx1;
+    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
+                      raft::ELECTION_TIMER_MAX_MS);
+    node_1.set_current_term(10);
+
+    std::thread stop_thread([&]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
+        node_1.cancel();
+    });
+
+    std::thread n1([&node_1]() {
+        node_1.run();
+    });
+
+    n1.join();
+    stop_thread.join();
+
+    // Ensure there is only one leader
+    GTEST_ASSERT_TRUE(node_1.get_server_state() != raft::ServerState::LEADER);
+}
