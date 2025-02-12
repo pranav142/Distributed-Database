@@ -20,7 +20,7 @@ namespace raft {
 
     ErrorCode append_to_file(const std::string &file_path, const std::string &value);
 
-    int generate_random_number(int min, int max);
+    int generate_random_number(unsigned int min, unsigned int max);
 }
 
 

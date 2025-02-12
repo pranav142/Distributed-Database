@@ -8,8 +8,6 @@
 #include "gRPC_server.h"
 #include "utils.h"
 
-
-
 raft::ServerState raft::Node::get_server_state() const {
     return m_server_state;
 }
@@ -38,12 +36,12 @@ void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
     if (!ec) {
         m_event_queue.push(ElectionTimeoutEvent{});
     } else if (ec != boost::asio::error::operation_aborted) {
-        std::cout << "Election timer error: " << ec.message() << std::endl;
+        m_logger->error("ElectionTimeout error: {}", ec.message());
     }
 }
 
 void raft::Node::reset_election_timer() {
-    unsigned int random_time_ms = generate_random_number(ELECTION_TIMER_MIN_MS, ELECTION_TIMER_MAX_MS);
+    unsigned int random_time_ms = generate_random_number(m_election_timer_min_ms, m_election_timer_max_ms);
     m_election_timer.set(random_time_ms, [this](const boost::system::error_code &ec) {
         on_election_timeout(ec);
     });
@@ -53,19 +51,22 @@ void raft::Node::on_heartbeat_timeout(const boost::system::error_code &ec) {
     if (!ec) {
         m_event_queue.push(HeartBeatEvent{});
     } else if (ec != boost::asio::error::operation_aborted) {
-        std::cout << "Election timer error: " << ec.message() << std::endl;
+        m_logger->error("Heartbeat timeout error: {}", ec.message());
     }
 }
 
 void raft::Node::reset_heartbeat_timer() {
-    m_heartbeat_timer.set(HEART_BEAT_INTERVAL_MS, [this](const boost::system::error_code &ec) {
+    m_heartbeat_timer.set(m_heart_beat_interval_ms, [this](const boost::system::error_code &ec) {
         on_heartbeat_timeout(ec);
     });
 }
 
-
 void raft::Node::shut_down_heartbeat_timer() {
     m_heartbeat_timer.cancel();
+}
+
+void raft::Node::log_current_state() const {
+    m_logger->debug("State: {}, term: {}", server_state_to_str(m_server_state), m_state.get_current_term());
 }
 
 void raft::Node::initialize() {
@@ -96,23 +97,24 @@ void raft::Node::stop() {
 }
 
 void raft::Node::become_follower(unsigned int term) {
-    std::cout << m_id << " Became FOLLOWER" << std::endl;
     m_server_state = ServerState::FOLLOWER;
 
+    // Reset election timer and shut down heartbeat timer when becoming a follower.
     reset_election_timer();
     shut_down_heartbeat_timer();
     m_state.set_current_term(term);
     m_state.set_vote_for_no_one();
+    log_current_state();
 }
 
 void raft::Node::become_leader() {
-    std::cout << m_id << " Became LEADER" << std::endl;
     m_server_state = ServerState::LEADER;
 
     // No more election timeouts when leader
     shut_down_election_timer();
     reset_heartbeat_timer();
     m_state.set_vote_for_no_one();
+    log_current_state();
 }
 
 void raft::Node::run_follower_loop() {
@@ -122,26 +124,23 @@ void raft::Node::run_follower_loop() {
         std::visit([this, &should_exit](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << m_id << " Election timeout: " << server_state_to_str(m_server_state) << " term: " <<
-                        m_state.
-                        get_current_term()
-                        << std::endl;
+                m_logger->debug("ElectionTimeoutEvent occurred");
                 become_candidate();
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
                 stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
-                // the term of request is lower deny it
+                // the term of request is lower, deny it
+                m_logger->debug("Received Append Entries request from: ", arg.leader_id);
                 if (arg.term < m_state.get_current_term()) {
                     AppendEntriesResponse response{};
                     response.success = false;
                     response.term = static_cast<int>(m_state.get_current_term());
+                    arg.callback(response);
                     return;
                 }
 
-                // if the term is higher adjust the term
-                // and set bote for no one to indicate no vote has been
-                // cast for this term
+                // if the term is higher, adjust the term and set vote for no one
                 if (arg.term > m_state.get_current_term()) {
                     m_state.set_current_term(arg.term);
                     m_state.set_vote_for_no_one();
@@ -153,38 +152,33 @@ void raft::Node::run_follower_loop() {
                 response.term = m_state.get_current_term();
                 arg.callback(response);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
-                std::cout << "WARNING: Got append entries response as a follower" << std::endl;
+                m_logger->warn("AppendEntriesResponseEvent received in Follower state");
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
-                std::cout << "WARNING: Got heartbeat as a follower" << std::endl;
+                m_logger->warn("HeartbeatEvent ignored in Follower state");
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                // This response was from when we were a candidate
-                // but if that response is higher, then immediately
-                // update to that higher term
+                m_logger->debug("Received RequestVoteResponse: vote_granted={}, term={}", arg.vote_granted, arg.term);
+                // If the response has a higher term, update our term and reset our vote.
                 if (arg.term > m_state.get_current_term()) {
                     m_state.set_current_term(arg.term);
                     m_state.set_vote_for_no_one();
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << m_id << " Got request vote as follower" << std::endl;
-
-                // If the request has a lower term
-                // immediately deny the vote
+                m_logger->debug("Received RequestVote from candidate: {}", arg.candidate_id);
+                // If the request has a lower term, immediately deny the vote.
                 if (arg.term < m_state.get_current_term()) {
                     RequestVoteResponse response{};
                     response.vote_granted = false;
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     arg.callback(response);
-                    should_exit = true;
+                    m_logger->debug("Denying vote to {} because candidate term ({}) is less than our term ({})",
+                                    arg.candidate_id, arg.term, m_state.get_current_term());
                     return;
                 }
 
-                // If a valid RPC is sent
-                // prevent unnecessary election
+                // If a valid RPC is sent, prevent unnecessary election.
                 reset_election_timer();
 
-                // If the request has a higher term
-                // update our term and indicate we haven't cast
-                // a vote for new term
+                // If the request has a higher term, update our term and indicate we haven't cast a vote.
                 if (arg.term > m_state.get_current_term()) {
                     m_state.set_current_term(arg.term);
                     m_state.set_voted_for(-1);
@@ -194,17 +188,19 @@ void raft::Node::run_follower_loop() {
                 response.vote_granted = false;
                 response.term = static_cast<int>(m_state.get_current_term());
 
-                // If no vote has been cast
-                // or already voted for candidate
-                // only grant vote if the log is as much
-                // or more up to date
+                // If no vote has been cast or already voted for this candidate,
+                // only grant vote if the candidate's log is as up-to-date or more.
                 if ((m_state.has_voted_for_no_one() || m_state.get_voted_for() == arg.candidate_id) &&
                     is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
                     response.vote_granted = true;
                     m_state.set_voted_for(arg.candidate_id);
+                    m_logger->debug("Granting vote to candidate: {}", arg.candidate_id);
+                    arg.callback(response);
+                    return;
                 }
 
                 arg.callback(response);
+                m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date", arg.candidate_id);
             }
         }, event);
     }
@@ -219,13 +215,12 @@ void raft::Node::request_vote(const std::string &address) {
 
     m_client->request_vote(address, request_vote_rpc, [this, address](const RequestVoteResponse &response) {
         if (response.error) {
-            std::cout << m_id << " ERROR: Request vote failed to: " << address << std::endl;
+            m_logger->error("RequestVote failed for address {}: node may be offline", address);
             return;
         }
         RequestVoteResponseEvent request_vote_response_event{};
         request_vote_response_event.term = response.term;
         request_vote_response_event.vote_granted = response.vote_granted;
-
         m_event_queue.push(request_vote_response_event);
     });
 }
@@ -253,91 +248,76 @@ void raft::Node::run_candidate_loop() {
         std::visit([this, &should_exit, &votes_granted, &quorum](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << m_id << " Election timeout: " << server_state_to_str(m_server_state) << " term: " <<
-                        m_state.
-                        get_current_term()
-                        << std::endl;
+                m_logger->debug("Election timeout received");
                 become_candidate();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
+                m_logger->debug("Received quit signal");
                 should_exit = true;
                 stop();
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                m_logger->debug("Received AppendEntries from leader: {}", arg.leader_id);
                 if (arg.term < m_state.get_current_term()) {
                     AppendEntriesResponse response{};
                     response.term = m_state.get_current_term();
                     response.success = false;
                     arg.callback(response);
+                    m_logger->debug("Denying AppendEntries from {}: leader's term ({}) is less than our term ({})",
+                                    arg.leader_id, arg.term, m_state.get_current_term());
                     return;
                 }
 
-                // If an append entry is at least as large
-                // as the candidates term become follower
-                // and accept leader
+                m_logger->debug("Accepting AppendEntries and recognizing new leader");
                 AppendEntriesResponse response{};
                 become_follower(arg.term);
                 response.term = m_state.get_current_term();
                 response.success = true;
                 arg.callback(response);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
-                std::cout << "WARNING: Got append entries response as a candidate" << std::endl;
+                m_logger->warn("Received AppendEntriesResponse as Candidate");
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
-                std::cout << "WARNING: Got heartbeat as a candidate" << std::endl;
+                m_logger->warn("Received HeartBeatEvent in Candidate state");
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << m_id << " GOT VOTE: Vote Granted: " << arg.vote_granted << " Term: " << arg.term <<
-                        std::endl;
-
-                // term from voter cannot be less than candidates term
-                // unless this a response meant for a previous election
+                m_logger->debug("Received vote: vote_granted={}, term={}", arg.vote_granted, arg.term);
+                // term from voter cannot be less than candidate's term unless it’s from a previous election.
                 if (arg.term < m_state.get_current_term()) {
-                    std::cout << "WARNING: Received a outdated request vote response" << std::endl;
+                    m_logger->warn("Received an outdated vote: term {} is less than current term {}", arg.term, m_state.get_current_term());
                     return;
                 }
-
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                     return;
                 }
-
                 if (arg.vote_granted) {
                     votes_granted++;
                     if (votes_granted >= quorum) {
                         become_leader();
+                        m_logger->debug("Received majority: {} votes (quorum: {})", votes_granted, quorum);
                     }
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << m_id << " Got request vote as candidate" << std::endl;
-
-                // if the term is lower
-                // immediately deny the vote
-                if (arg.term < m_state.get_current_term()) {
+                m_logger->debug("Received RequestVote from candidate: {}", arg.candidate_id);
+                if (arg.term <= m_state.get_current_term()) {
                     RequestVoteResponse response{};
                     response.vote_granted = false;
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     arg.callback(response);
+                    m_logger->debug("Denying vote to {}: candidate term ({}) is less than or equal to our term ({})",
+                                    arg.candidate_id, arg.term, m_state.get_current_term());
                     return;
                 }
-
-                if (arg.term > m_state.get_current_term()) {
-                    become_follower(arg.term);
-                    RequestVoteResponse response{};
-                    response.vote_granted = false;
-                    response.term = static_cast<int>(m_state.get_current_term());
-                    if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
-                        response.vote_granted = true;
-                        m_state.set_voted_for(arg.candidate_id);
-                    }
-                    arg.callback(response);
-                    return;
+                become_follower(arg.term);
+                RequestVoteResponse response{};
+                response.vote_granted = false;
+                response.term = m_state.get_current_term();
+                if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                    response.vote_granted = true;
+                    m_state.set_voted_for(arg.candidate_id);
+                    m_logger->debug("Granting vote to candidate {} because they have a higher term and up-to-date log", arg.candidate_id);
+                } else {
+                    m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date", arg.candidate_id);
                 }
-
-                // this is the case when the term of request
-                // is equal to the term of the candidate
-                // in which case we deny the vote
-                RequestVoteResponse request_vote_response{};
-                request_vote_response.vote_granted = false;
-                request_vote_response.term = static_cast<int>(m_state.get_current_term());
-                arg.callback(request_vote_response);
+                arg.callback(response);
             }
         }, event);
 
@@ -347,16 +327,14 @@ void raft::Node::run_candidate_loop() {
     }
 }
 
-// returns true if the inputted log is as up to date or more up to date
+// returns true if the input log is as up-to-date or more up-to-date
 bool raft::Node::is_log_more_up_to_date(unsigned int last_log_index, unsigned int last_log_term) const {
     if (last_log_term > m_state.get_last_log_term()) {
         return true;
     }
-
     if (last_log_term == m_state.get_last_log_term() && last_log_index >= m_state.get_last_log_index()) {
         return true;
     }
-
     return false;
 }
 
@@ -371,7 +349,7 @@ void raft::Node::append_entries(const std::string &address) {
 
     m_client->append_entries(address, append_entries_rpc, [this, address](const AppendEntriesResponse &response) {
         if (response.error) {
-            std::cout << m_id << " ERROR: append entries failed to: " << address << std::endl;
+            m_logger->error("AppendEntries failed for address {}", address);
             return;
         }
         AppendEntriesResponseEvent event{};
@@ -389,89 +367,81 @@ void raft::Node::run_leader_loop() {
         std::visit([this, &should_exit](auto &&arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                std::cout << m_id << " WARNING: Got Election Timeout as a leader" << std::endl;
+                m_logger->warn("Election timeout received in Leader state");
             } else if constexpr (std::is_same_v<T, QuitEvent>) {
+                m_logger->debug("Quit signal received; stopping node");
                 stop();
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
-                for (auto &pair: m_cluster) {
-                    if (pair.first == m_id) {
-                        continue;
-                    }
+                m_logger->debug("Heartbeat timeout received; sending AppendEntries to followers");
+                for (auto &pair : m_cluster) {
+                    if (pair.first == m_id) continue;
                     append_entries(pair.second.address);
                 }
                 reset_heartbeat_timer();
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                m_logger->debug("Received AppendEntries request from leader: {}", arg.leader_id);
                 if (arg.term < m_state.get_current_term()) {
                     AppendEntriesResponse response{};
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     response.success = false;
                     arg.callback(response);
+                    m_logger->debug("Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
+                                    arg.leader_id, arg.term, m_state.get_current_term());
                     return;
                 }
-
-                // if the append entries term is higher
-                // demote to follower and accept the
-                // new leader
+                // if the append entries term is higher, demote to follower and accept the new leader
                 if (arg.term > m_state.get_current_term()) {
+                    m_logger->debug("Accepting AppendEntries request and recognizing new leader");
                     become_follower(arg.term);
                     AppendEntriesResponse response{};
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     response.success = true;
                     arg.callback(response);
                     return;
                 }
-
-                // This is the case where the term is equal
-                // if this occurred there is some serious issue
-                // in the implementation
-                std::cout << "ERROR: Received a append entries of equal term. Denying Request!" << std::endl;
+                // This is the case where the term is equal; serious issue in the implementation.
+                m_logger->critical("Two leaders detected with the same term; denying AppendEntries request");
                 AppendEntriesResponse response{};
-                response.term = static_cast<int>(m_state.get_current_term());
+                response.term = m_state.get_current_term();
                 response.success = false;
                 arg.callback(response);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
+                m_logger->debug("Received AppendEntriesResponse");
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                     return;
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                std::cout << m_id << " WARNING: Got Request Response as a leader" << std::endl;
-                // if a response is of a higher term go back to
-                // the follower state of that term
+                m_logger->warn("Received RequestVoteResponse in Leader state");
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                std::cout << m_id << " Got request vote as a leader" << std::endl;
-
-                if (arg.term < m_state.get_current_term()) {
+                m_logger->warn("Received RequestVote from candidate: {}", arg.candidate_id);
+                if (arg.term <= m_state.get_current_term()) {
                     RequestVoteResponse response{};
                     response.vote_granted = false;
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     arg.callback(response);
+                    m_logger->warn("Denying vote to candidate {} because candidate term ({}) is less than our term ({})",
+                                   arg.candidate_id, arg.term, m_state.get_current_term());
                     return;
                 }
-
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                     RequestVoteResponse response{};
                     response.vote_granted = false;
-                    response.term = static_cast<int>(m_state.get_current_term());
+                    response.term = m_state.get_current_term();
                     if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
                         response.vote_granted = true;
                         m_state.set_voted_for(arg.candidate_id);
+                        m_logger->debug("Granting vote to candidate {} and stepping down, since candidate has greater term", arg.candidate_id);
+                    } else {
+                        m_logger->debug("Denying vote to candidate {}: candidate's term is greater but log is not up-to-date", arg.candidate_id);
                     }
                     arg.callback(response);
-                    return;
                 }
-
-                // if the term is equal
-                // reject the request to vote
-                RequestVoteResponse response{};
-                response.vote_granted = false;
-                response.term = static_cast<int>(m_state.get_current_term());
-                arg.callback(response);
             }
         }, event);
 
@@ -493,11 +463,11 @@ void raft::Node::run_server(const std::string &address) {
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(m_service.get());
     m_server = builder.BuildAndStart();
-    std::cout << "Server listening on " << address << std::endl;
+    m_logger->info("gRPC Server listening on {}", address);
     m_server->Wait();
 }
 
-// Blocking Call that causes the node to run
+// Blocking call that causes the node to run
 void raft::Node::run() {
     m_running = true;
 
@@ -513,18 +483,15 @@ void raft::Node::run() {
 
     while (m_running) {
         switch (m_server_state) {
-            case ServerState::FOLLOWER: {
+            case ServerState::FOLLOWER:
                 run_follower_loop();
                 break;
-            }
-            case ServerState::CANDIDATE: {
+            case ServerState::CANDIDATE:
                 run_candidate_loop();
                 break;
-            }
-            case ServerState::LEADER: {
+            case ServerState::LEADER:
                 run_leader_loop();
                 break;
-            }
         }
     }
 
@@ -546,10 +513,10 @@ std::string raft::server_state_to_str(ServerState state) {
 }
 
 void raft::Node::become_candidate() {
-    std::cout << m_id << " Became CANDIDATE" << std::endl;
     m_server_state = ServerState::CANDIDATE;
 
     m_state.increment_term();
     m_state.set_voted_for(static_cast<int>(m_id));
     reset_election_timer();
+    log_current_state();
 }

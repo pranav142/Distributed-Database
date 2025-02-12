@@ -12,6 +12,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
+find_package(spdlog REQUIRED)
+
 # Installs GRPC
 set(ABSL_ENABLE_INSTALL ON)
 set(GRPC_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/libs/grpc)
@@ -51,6 +53,8 @@ set(RAFT_FILES
         raft/client.cpp
         raft/timer.cpp
         raft/timer.h
+        raft/logging.cpp
+        raft/logging.h
 )
 
 add_library(raft
@@ -61,9 +65,10 @@ target_include_directories(raft
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
 )
 
-target_link_libraries(raft PUBLIC protolib grpc++)
+target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 
 add_executable(db
         main.cpp

@@ -8,6 +8,7 @@
 #include "client.h"
 #include "node.h"
 #include "gRPC_client.h"
+#include "logging.h"
 
 class MockClient final : public raft::Client {
 public:
@@ -62,6 +63,8 @@ TEST(ElectionTest, CoreElectionLogic) {
 }
 
 TEST(ElectionTest, RequestVoteTest) {
+    raft::initialize_global_logging();
+
     raft::gRPCClient client;
 
     raft::RequestVoteRPC request_vote{};
@@ -108,6 +111,8 @@ TEST(ElectionTest, RequestVoteTest) {
 
 
 TEST(ElectionTest, NodeElectionTest) {
+    raft::initialize_global_logging();
+
     auto client1 = std::make_unique<raft::gRPCClient>();
     auto client2 = std::make_unique<raft::gRPCClient>();
     auto client3 = std::make_unique<raft::gRPCClient>();
@@ -139,7 +144,7 @@ TEST(ElectionTest, NodeElectionTest) {
     node_3.set_current_term(8);
 
     std::thread stop_thread([&]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
         node_2.cancel();
         node_3.cancel();
@@ -182,22 +187,23 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     auto client2 = std::make_unique<raft::gRPCClient>();
     auto client3 = std::make_unique<raft::gRPCClient>();
 
+    raft::initialize_global_logging();
+
     raft::ClusterMap cluster_map{
-            {1, raft::NodeInfo{"127.0.0.1:6969"}},
-            {2, raft::NodeInfo{"127.0.0.1:7070"}},
-            {3, raft::NodeInfo{"127.0.0.1:4206"}},
-        };
+        {1, raft::NodeInfo{"127.0.0.1:6969"}},
+        {2, raft::NodeInfo{"127.0.0.1:7070"}},
+        {3, raft::NodeInfo{"127.0.0.1:4206"}},
+    };
 
     // this node will time out last but should still end up as the leader
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
     boost::asio::io_context ctx1;
-    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
-                      raft::ELECTION_TIMER_MAX_MS);
+    raft::Node node_1(1, cluster_map, ctx1, std::move(client1));
     node_1.set_current_term(10);
 
     std::thread stop_thread([&]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10 * raft::ELECTION_TIMER_MAX_MS));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
     });
 

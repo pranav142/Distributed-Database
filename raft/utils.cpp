@@ -89,7 +89,7 @@ raft::ErrorCode raft::append_to_file(const std::string &file_path, const std::st
     return SUCCESS;
 }
 
-int raft::generate_random_number(int min, int max) {
+int raft::generate_random_number(unsigned int min, unsigned int max) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(min, max); // Generate integers from 1 to 6 (inclusive)

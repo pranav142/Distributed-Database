@@ -6,6 +6,9 @@
 #define NODE_H
 
 #include <vector>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 #include "cluster.h"
 #include "events.h"
 #include "event_queue.h"
@@ -29,22 +32,27 @@ namespace raft {
     class Node {
     public:
         Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
-                   std::unique_ptr<Client> client, unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
-                   unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
-                   unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS) : m_id(id),
-            m_state(
-                "log_" + std::to_string(id) + ".txt"),
-            m_cluster(cluster),
-            m_io(io),
-            m_election_timer(io),
-            m_heartbeat_timer(io),
-            m_strand(make_strand(io)),
-            m_work_guard(
-                make_work_guard(io)),
-            m_client(std::move(client)),
-            m_election_timer_max_ms(election_timer_max_ms),
-            m_election_timer_min_ms(election_timer_min_ms),
-            m_heart_beat_interval_ms(heartbeat_interval_ms) {
+             std::unique_ptr<Client> client, unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
+             unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
+             unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS) : m_id(id),
+                                                                            m_state(
+                                                                                "log_" + std::to_string(id) + ".txt"),
+                                                                            m_cluster(cluster),
+                                                                            m_io(io),
+                                                                            m_election_timer(io),
+                                                                            m_heartbeat_timer(io),
+                                                                            m_strand(make_strand(io)),
+                                                                            m_work_guard(
+                                                                                make_work_guard(io)),
+                                                                            m_client(std::move(client)),
+                                                                            m_election_timer_max_ms(
+                                                                                election_timer_max_ms),
+                                                                            m_election_timer_min_ms(
+                                                                                election_timer_min_ms),
+                                                                            m_heart_beat_interval_ms(
+                                                                                heartbeat_interval_ms),
+                                                                            m_logger(spdlog::stdout_color_mt(
+                                                                                "node_" + std::to_string(id))) {
         }
 
         ServerState get_server_state() const;
@@ -68,6 +76,8 @@ namespace raft {
         void reset_heartbeat_timer();
 
         void shut_down_heartbeat_timer();
+
+        void log_current_state() const;
 
         void run();
 
@@ -137,6 +147,8 @@ namespace raft {
         std::unique_ptr<Client> m_client = nullptr;
         std::unique_ptr<RaftSeverImpl> m_service = nullptr;
         std::unique_ptr<grpc::Server> m_server = nullptr;
+
+        std::shared_ptr<spdlog::logger> m_logger;
     };
 
     std::string server_state_to_str(ServerState state);
