@@ -66,3 +66,36 @@ TEST(PersistentStateReadLog, HandlesValidLog) {
     GTEST_ASSERT_EQ(log.value().term, 20);
     GTEST_ASSERT_EQ(log.value().index, 3);
 }
+
+TEST(PersistentStateReadLog, GetsEntries) {
+    raft::PersistentState state("append_log_2.txt");
+    state.set_current_term(10);
+
+    auto ret = state.append_log("x->3");
+    GTEST_ASSERT_EQ(ret, raft::ErrorCode::SUCCESS);
+    ret = state.append_log("x->5");
+    GTEST_ASSERT_EQ(ret, raft::ErrorCode::SUCCESS);
+
+    state.set_current_term(20);
+    ret = state.append_log("x->6");
+    GTEST_ASSERT_EQ(ret, raft::ErrorCode::SUCCESS);
+
+    auto log = state.read_log(3);
+    GTEST_ASSERT_TRUE(log != std::nullopt);
+    GTEST_ASSERT_EQ(log.value().entry, "x->6");
+    GTEST_ASSERT_EQ(log.value().term, 20);
+    GTEST_ASSERT_EQ(log.value().index, 3);
+
+    state.add_entries(3, "3,10,x->5\n4,10,x->5\n5,10,x->5\n");
+    auto logs = state.get_entries_till_end(1);
+    std::cout << logs;
+    state.delete_logs(1);
+
+    log = state.read_log(3);
+    GTEST_ASSERT_TRUE(log != std::nullopt);
+    GTEST_ASSERT_EQ(log.value().entry, "x->5");
+    GTEST_ASSERT_EQ(log.value().term, 10);
+    GTEST_ASSERT_EQ(log.value().index, 3);
+
+}
+

@@ -4,6 +4,8 @@
 
 #include "persistent_state.h"
 #include <fstream>
+#include <sstream>
+#include <absl/strings/str_format.h>
 #include <gtest/gtest.h>
 #include "error_codes.h"
 #include "utils.h"
@@ -51,7 +53,6 @@ unsigned int raft::PersistentState::get_last_log_term() const {
     }
 
     return std::stoi(term_str);
-
 }
 
 raft::ErrorCode raft::PersistentState::append_log(const std::string &entry) const {
@@ -59,6 +60,13 @@ raft::ErrorCode raft::PersistentState::append_log(const std::string &entry) cons
     unsigned int index = get_last_log_index() + 1;
 
     Log log(index, m_current_term, entry);
+    return append_to_file(m_log_file_path, serialize_log(log));
+}
+
+raft::ErrorCode raft::PersistentState::append_log(const Log &log) const {
+    if (log.index < get_last_log_index() || log.term < get_last_log_term()) {
+        std::cerr << "Not allowed to append a lof that is a lower index or term than previous" << std::endl;
+    }
     return append_to_file(m_log_file_path, serialize_log(log));
 }
 
@@ -130,7 +138,8 @@ raft::ErrorCode raft::PersistentState::load_state() {
     std::getline(file, metadata_header);
     std::istringstream metadata_stream(metadata_header);
 
-    if (!std::getline(metadata_stream, header_str, ',') || !std::getline(metadata_stream, current_term_str, ',') || !std::getline(metadata_stream, voted_for_str, '\n')) {
+    if (!std::getline(metadata_stream, header_str, ',') || !std::getline(metadata_stream, current_term_str, ',') || !
+        std::getline(metadata_stream, voted_for_str, '\n')) {
         return FAILED_TO_PARSE_HEADER;
     }
 
@@ -148,10 +157,110 @@ raft::ErrorCode raft::PersistentState::load_state() {
     return SUCCESS;
 }
 
+unsigned int raft::PersistentState::get_log_term(unsigned int index) const {
+    auto log = read_log(index);
+    if (log == std::nullopt) {
+        return 0;
+    }
+    return log.value().term;
+}
+
+// returns entries from the index to the end
+std::string raft::PersistentState::get_entries_till_end(unsigned int index) const {
+    std::stringstream ss;
+    for (; index <= get_last_log_index(); index++) {
+        std::optional<Log> log = read_log(index);
+        if (log == std::nullopt) {
+            continue;
+        }
+        ss << serialize_log(log.value());
+    }
+    return ss.str();
+}
+
+// deletes logs from this index to end
+void raft::PersistentState::delete_logs(unsigned int index) const {
+    // nothing to delete
+    if (index > get_last_log_index()) {
+        return;
+    }
+
+    std::ifstream infile(m_log_file_path);
+    if (!infile.is_open()) {
+        std::cerr << "Failed to open log file for deletion: " << m_log_file_path << std::endl;
+        return;
+    }
+
+    std::string header;
+    if (!std::getline(infile, header)) {
+        infile.close();
+        std::cerr << "Failed to read header from log file: " << m_log_file_path << std::endl;
+        return;
+    }
+
+    std::vector<std::string> kept_lines;
+
+    std::string line;
+    while (std::getline(infile, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        std::istringstream iss(line);
+        std::string log_str;
+
+        if (!std::getline(iss, log_str)) {
+            continue;
+        }
+
+        std::optional<Log> log = deserialize_log(log_str);
+        if (log == std::nullopt) {
+            continue;
+        }
+
+        if (log.value().index < index) {
+            kept_lines.push_back(log_str);
+        }
+    }
+    infile.close();
+
+    std::ofstream outfile(m_log_file_path, std::ios::trunc);
+    if (!outfile.is_open()) {
+        std::cerr << "Failed to open log file for writing during deletion: " << m_log_file_path << std::endl;
+        return;
+    }
+
+    outfile << header << "\n";
+
+    for (const auto &kept_line: kept_lines) {
+        outfile << kept_line << "\n";
+    }
+    outfile.close();
+}
+
+// deletes entries from start index to end and then replaces that with the following entries
+void raft::PersistentState::add_entries(unsigned int start_index, const std::string &entries) {
+    delete_logs(start_index);
+
+    std::istringstream ss(entries);
+    std::string s;
+
+    while (std::getline(ss, s, '\n')) {
+        if (!deserialize_log(s)) {
+            std::cerr << "Failed to deserialize persistent state" << std::endl;
+            exit(1);
+        }
+        if (append_log(deserialize_log(s).value()) != SUCCESS) {
+            std::cerr << "Failed to append log" << std::endl;
+            exit(1);
+        }
+    }
+}
+
 bool raft::PersistentState::has_voted_for_no_one() const {
     return m_voted_for == -1;
 }
 
-void raft::PersistentState::set_vote_for_no_one()  {
+void raft::PersistentState::set_vote_for_no_one() {
     m_voted_for = -1;
 }
