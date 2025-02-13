@@ -45,6 +45,8 @@ namespace raft {
     struct AppendEntriesResponseEvent {
         unsigned int term;
         bool success;
+        unsigned int id;
+        unsigned int last_index_added;
     };
 
     typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent, RequestVoteEvent, AppendEntriesEvent

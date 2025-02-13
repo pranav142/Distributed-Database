@@ -67,6 +67,8 @@ namespace raft {
 
         void set_current_term(unsigned int term);
 
+        void append_log(const std::string &log);
+
         void on_election_timeout(const boost::system::error_code &ec);
 
         void reset_election_timer();
@@ -106,7 +108,13 @@ namespace raft {
 
         bool is_log_more_up_to_date(unsigned int last_log_index, unsigned int last_log_term) const;
 
-        void append_entries(const std::string &address);
+        void append_entries(unsigned int id);
+
+        void initialize_next_index();
+
+        void initialize_match_index();
+
+        void update_commit_index();
 
         void run_leader_loop();
 

@@ -43,13 +43,13 @@ TEST(ElectionTest, CoreElectionLogic) {
     std::unique_ptr<MockClient> client = std::make_unique<MockClient>();
 
     raft::ClusterMap cluster_map{
-        {1, raft::NodeInfo{"0.0.0.0:6969"}},
-        {2, raft::NodeInfo{"0.0.0.0:7070"}},
-        {3, raft::NodeInfo{"0.0.0.0:4206"}},
+        {0, raft::NodeInfo{"0.0.0.0:6969"}},
+        {1, raft::NodeInfo{"0.0.0.0:7070"}},
+        {2, raft::NodeInfo{"0.0.0.0:4206"}},
     };
 
     boost::asio::io_context io_context;
-    raft::Node node(1, cluster_map, io_context, std::move(client));
+    raft::Node node(0, cluster_map, io_context, std::move(client));
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -76,9 +76,9 @@ TEST(ElectionTest, RequestVoteTest) {
     std::unique_ptr<MockClient> n_client = std::make_unique<MockClient>();
 
     raft::ClusterMap cluster_map{
-        {1, raft::NodeInfo{"127.0.0.1:6969"}},
-        {2, raft::NodeInfo{"0.0.0.0:7070"}},
-        {3, raft::NodeInfo{"0.0.0.0:4206"}},
+        {0, raft::NodeInfo{"127.0.0.1:6969"}},
+        {1, raft::NodeInfo{"0.0.0.0:7070"}},
+        {2, raft::NodeInfo{"0.0.0.0:4206"}},
     };
 
 
@@ -93,7 +93,7 @@ TEST(ElectionTest, RequestVoteTest) {
     });
 
     boost::asio::io_context io_context;
-    raft::Node node(1, cluster_map, io_context, std::move(n_client));
+    raft::Node node(0, cluster_map, io_context, std::move(n_client));
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -118,30 +118,32 @@ TEST(ElectionTest, NodeElectionTest) {
     auto client3 = std::make_unique<raft::gRPCClient>();
 
     raft::ClusterMap cluster_map{
-        {1, raft::NodeInfo{"127.0.0.1:6969"}},
-        {2, raft::NodeInfo{"127.0.0.1:7070"}},
-        {3, raft::NodeInfo{"127.0.0.1:4206"}},
+        {0, raft::NodeInfo{"127.0.0.1:6969"}},
+        {1, raft::NodeInfo{"127.0.0.1:7070"}},
+        {2, raft::NodeInfo{"127.0.0.1:4206"}},
     };
 
     // this node will time out last but should still end up as the leader
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
     boost::asio::io_context ctx1;
-    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
+    raft::Node node_1(0, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
                       raft::ELECTION_TIMER_MAX_MS);
     node_1.set_current_term(10);
+    node_1.append_log("x->1");
+    node_1.append_log("x->2");
 
     // these nodes will timeout first but should not end up as leader
 
     boost::asio::io_context ctx2;
-    raft::Node node_2(2, cluster_map, ctx2, std::move(client2), raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_2(1, cluster_map, ctx2, std::move(client2), raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
-    node_2.set_current_term(8);
+    node_2.set_current_term(6);
 
     boost::asio::io_context ctx3;
-    raft::Node node_3(3, cluster_map, ctx3, std::move(client3), raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_3(2, cluster_map, ctx3, std::move(client3), raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
-    node_3.set_current_term(8);
+    node_3.set_current_term(6);
 
     std::thread stop_thread([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -190,9 +192,9 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     raft::initialize_global_logging();
 
     raft::ClusterMap cluster_map{
-        {1, raft::NodeInfo{"127.0.0.1:6969"}},
-        {2, raft::NodeInfo{"127.0.0.1:7070"}},
-        {3, raft::NodeInfo{"127.0.0.1:4206"}},
+        {0, raft::NodeInfo{"127.0.0.1:6969"}},
+        {1, raft::NodeInfo{"127.0.0.1:7070"}},
+        {2, raft::NodeInfo{"127.0.0.1:4206"}},
     };
 
     // this node will time out last but should still end up as the leader

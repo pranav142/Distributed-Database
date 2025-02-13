@@ -89,7 +89,6 @@ TEST(PersistentStateReadLog, GetsEntries) {
     state.add_entries(3, "3,10,x->5\n4,10,x->5\n5,10,x->5\n");
     auto logs = state.get_entries_till_end(1);
     std::cout << logs;
-    state.delete_logs(1);
 
     log = state.read_log(3);
     GTEST_ASSERT_TRUE(log != std::nullopt);
@@ -97,5 +96,6 @@ TEST(PersistentStateReadLog, GetsEntries) {
     GTEST_ASSERT_EQ(log.value().term, 10);
     GTEST_ASSERT_EQ(log.value().index, 3);
 
+    state.delete_logs(1);
 }
 

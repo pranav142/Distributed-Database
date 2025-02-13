@@ -32,6 +32,12 @@ void raft::Node::set_current_term(unsigned int term) {
     m_state.set_current_term(term);
 }
 
+void raft::Node::append_log(const std::string &log) {
+    if (m_state.append_log(log) != SUCCESS) {
+        m_logger->error("Failed to append log");
+    }
+}
+
 void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
     if (!ec) {
         m_event_queue.push(ElectionTimeoutEvent{});
@@ -131,12 +137,15 @@ void raft::Node::run_follower_loop() {
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
                 // the term of request is lower, deny it
-                m_logger->debug("Received Append Entries request from: ", arg.leader_id);
+                m_logger->debug("Received Append Entries request from: {}", arg.leader_id);
                 if (arg.term < m_state.get_current_term()) {
                     AppendEntriesResponse response{};
                     response.success = false;
                     response.term = static_cast<int>(m_state.get_current_term());
                     arg.callback(response);
+                    m_logger->debug(
+                        "Denying Append Entries Request because term of request {} is less than our term {}", arg.term,
+                        m_state.get_current_term());
                     return;
                 }
 
@@ -147,6 +156,26 @@ void raft::Node::run_follower_loop() {
                 }
 
                 reset_election_timer();
+
+                // this checks if there is not a match
+                // if the previous log index is greater than any index we have -> deny
+                // if the log term of the index is mismatched -> deny
+                if (arg.prev_log_index > m_state.get_last_log_index() || (arg.prev_log_term != m_state.get_log_term(
+                                                                              arg.prev_log_index) && arg.prev_log_index
+                                                                          != 0)) {
+                    m_logger->debug("Denying append entries because could not find matching entry {}",
+                                    arg.prev_log_index);
+                    AppendEntriesResponse response{};
+                    response.success = false;
+                    response.term = m_state.get_current_term();
+                    arg.callback(response);
+                    return;
+                }
+
+                // TODO: add state machine processing when commit index is updated
+                m_commit_index = arg.commit_index;
+                m_state.add_entries(arg.prev_log_index + 1, arg.entries);
+
                 AppendEntriesResponse response{};
                 response.success = true;
                 response.term = m_state.get_current_term();
@@ -200,7 +229,8 @@ void raft::Node::run_follower_loop() {
                 }
 
                 arg.callback(response);
-                m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date", arg.candidate_id);
+                m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date",
+                                arg.candidate_id);
             }
         }, event);
     }
@@ -267,12 +297,10 @@ void raft::Node::run_candidate_loop() {
                     return;
                 }
 
-                m_logger->debug("Accepting AppendEntries and recognizing new leader");
-                AppendEntriesResponse response{};
+                m_logger->debug("Recognizing new leader and stepping down");
                 become_follower(arg.term);
-                response.term = m_state.get_current_term();
-                response.success = true;
-                arg.callback(response);
+                // push the event to be processed in the follower loop
+                m_event_queue.push(arg);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
                 m_logger->warn("Received AppendEntriesResponse as Candidate");
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
@@ -281,7 +309,8 @@ void raft::Node::run_candidate_loop() {
                 m_logger->debug("Received vote: vote_granted={}, term={}", arg.vote_granted, arg.term);
                 // term from voter cannot be less than candidate's term unless it’s from a previous election.
                 if (arg.term < m_state.get_current_term()) {
-                    m_logger->warn("Received an outdated vote: term {} is less than current term {}", arg.term, m_state.get_current_term());
+                    m_logger->warn("Received an outdated vote: term {} is less than current term {}", arg.term,
+                                   m_state.get_current_term());
                     return;
                 }
                 if (arg.term > m_state.get_current_term()) {
@@ -313,9 +342,11 @@ void raft::Node::run_candidate_loop() {
                 if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
                     response.vote_granted = true;
                     m_state.set_voted_for(arg.candidate_id);
-                    m_logger->debug("Granting vote to candidate {} because they have a higher term and up-to-date log", arg.candidate_id);
+                    m_logger->debug("Granting vote to candidate {} because they have a higher term and up-to-date log",
+                                    arg.candidate_id);
                 } else {
-                    m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date", arg.candidate_id);
+                    m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date",
+                                    arg.candidate_id);
                 }
                 arg.callback(response);
             }
@@ -338,28 +369,59 @@ bool raft::Node::is_log_more_up_to_date(unsigned int last_log_index, unsigned in
     return false;
 }
 
-void raft::Node::append_entries(const std::string &address) {
+void raft::Node::append_entries(unsigned int id) {
+    std::string &address = m_cluster[id].address;
     AppendEntriesRPC append_entries_rpc;
-    append_entries_rpc.commit_index = 0;
-    append_entries_rpc.entries = "";
+    unsigned int last_index = m_state.get_last_log_index();
+
     append_entries_rpc.leader_id = m_id;
-    append_entries_rpc.prev_log_index = 0;
-    append_entries_rpc.prev_log_term = 0;
     append_entries_rpc.term = m_state.get_current_term();
 
-    m_client->append_entries(address, append_entries_rpc, [this, address](const AppendEntriesResponse &response) {
-        if (response.error) {
-            m_logger->error("AppendEntries failed for address {}", address);
-            return;
-        }
-        AppendEntriesResponseEvent event{};
-        event.term = static_cast<int>(response.term);
-        event.success = response.success;
-        m_event_queue.push(event);
-    });
+    append_entries_rpc.prev_log_index = m_next_index[id] - 1;
+    append_entries_rpc.prev_log_term = m_state.get_log_term(append_entries_rpc.prev_log_index);
+    append_entries_rpc.entries = m_state.get_entries_till_end(m_next_index[id]);
+
+    append_entries_rpc.commit_index = m_commit_index;
+
+    m_client->append_entries(address, append_entries_rpc,
+                             [this, address, id, last_index](const AppendEntriesResponse &response) {
+                                 if (response.error) {
+                                     m_logger->error("AppendEntries failed for address {}", address);
+                                     return;
+                                 }
+                                 AppendEntriesResponseEvent event{};
+                                 event.term = static_cast<int>(response.term);
+                                 event.success = response.success;
+                                 event.id = id;
+                                 event.last_index_added = last_index;
+                                 m_event_queue.push(event);
+                             });
+}
+
+void raft::Node::initialize_next_index() {
+    unsigned int default_value = m_state.get_last_log_index() + 1;
+    m_next_index.resize(m_cluster.size(), default_value);
+}
+
+void raft::Node::initialize_match_index() {
+    m_match_index.resize(m_cluster.size(), 0);
+}
+
+void raft::Node::update_commit_index() {
+    unsigned int quorum = calculate_quorum();
+    std::vector v(m_match_index);
+    std::sort(v.begin(), v.end());
+    unsigned int commit_index = v[quorum - 1];
+
+    if (m_state.get_log_term(commit_index) == m_state.get_current_term()) {
+        m_commit_index = commit_index;
+        m_logger->debug("Updating commit_index to {}", commit_index);
+    }
 }
 
 void raft::Node::run_leader_loop() {
+    initialize_match_index();
+    initialize_next_index();
     bool should_exit = false;
 
     while (m_server_state == ServerState::LEADER) {
@@ -374,9 +436,9 @@ void raft::Node::run_leader_loop() {
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
                 m_logger->debug("Heartbeat timeout received; sending AppendEntries to followers");
-                for (auto &pair : m_cluster) {
+                for (auto &pair: m_cluster) {
                     if (pair.first == m_id) continue;
-                    append_entries(pair.second.address);
+                    append_entries(pair.first);
                 }
                 reset_heartbeat_timer();
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
@@ -386,10 +448,13 @@ void raft::Node::run_leader_loop() {
                     response.term = m_state.get_current_term();
                     response.success = false;
                     arg.callback(response);
-                    m_logger->debug("Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
-                                    arg.leader_id, arg.term, m_state.get_current_term());
+                    // TODO: Bug in this logging
+                    m_logger->debug(
+                        "Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
+                        arg.leader_id, arg.term, m_state.get_current_term());
                     return;
                 }
+
                 // if the append entries term is higher, demote to follower and accept the new leader
                 if (arg.term > m_state.get_current_term()) {
                     m_logger->debug("Accepting AppendEntries request and recognizing new leader");
@@ -412,6 +477,16 @@ void raft::Node::run_leader_loop() {
                     become_follower(arg.term);
                     return;
                 }
+
+                if (!arg.success) {
+                    m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
+                } else {
+                    m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id, m_next_index[arg.id],
+                                    arg.last_index_added);
+                    m_match_index[arg.id] = arg.last_index_added;
+                    m_next_index[arg.id] = arg.last_index_added + 1;
+                    update_commit_index();
+                }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 m_logger->warn("Received RequestVoteResponse in Leader state");
                 if (arg.term > m_state.get_current_term()) {
@@ -424,8 +499,9 @@ void raft::Node::run_leader_loop() {
                     response.vote_granted = false;
                     response.term = m_state.get_current_term();
                     arg.callback(response);
-                    m_logger->warn("Denying vote to candidate {} because candidate term ({}) is less than our term ({})",
-                                   arg.candidate_id, arg.term, m_state.get_current_term());
+                    m_logger->warn(
+                        "Denying vote to candidate {} because candidate term ({}) is less than our term ({})",
+                        arg.candidate_id, arg.term, m_state.get_current_term());
                     return;
                 }
                 if (arg.term > m_state.get_current_term()) {
@@ -436,9 +512,13 @@ void raft::Node::run_leader_loop() {
                     if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
                         response.vote_granted = true;
                         m_state.set_voted_for(arg.candidate_id);
-                        m_logger->debug("Granting vote to candidate {} and stepping down, since candidate has greater term", arg.candidate_id);
+                        m_logger->debug(
+                            "Granting vote to candidate {} and stepping down, since candidate has greater term",
+                            arg.candidate_id);
                     } else {
-                        m_logger->debug("Denying vote to candidate {}: candidate's term is greater but log is not up-to-date", arg.candidate_id);
+                        m_logger->debug(
+                            "Denying vote to candidate {}: candidate's term is greater but log is not up-to-date",
+                            arg.candidate_id);
                     }
                     arg.callback(response);
                 }
