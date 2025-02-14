@@ -130,8 +130,8 @@ TEST(ElectionTest, NodeElectionTest) {
     raft::Node node_1(0, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
                       raft::ELECTION_TIMER_MAX_MS);
     node_1.set_current_term(10);
-    node_1.append_log("x->1");
     node_1.append_log("x->2");
+    node_1.append_log("x->3");
 
     // these nodes will timeout first but should not end up as leader
 

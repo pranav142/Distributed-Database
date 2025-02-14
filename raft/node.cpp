@@ -33,6 +33,9 @@ void raft::Node::set_current_term(unsigned int term) {
 }
 
 void raft::Node::append_log(const std::string &request) {
+    if (!m_state.append_log(request)) {
+        m_logger->error("Failed to append log");
+    }
 }
 
 void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
@@ -90,9 +93,7 @@ void raft::Node::cancel() {
 
 void raft::Node::stop() {
     m_running = false;
-    if (m_server) {
-        m_server->Shutdown();
-    }
+    m_server.stop();
     shut_down_election_timer();
     shut_down_heartbeat_timer();
     m_work_guard.reset();
@@ -102,6 +103,7 @@ void raft::Node::stop() {
 void raft::Node::become_follower(unsigned int term) {
     m_server_state = ServerState::FOLLOWER;
 
+    m_leader_id = -1;
     // Reset election timer and shut down heartbeat timer when becoming a follower.
     reset_election_timer();
     shut_down_heartbeat_timer();
@@ -114,6 +116,7 @@ void raft::Node::become_leader() {
     m_server_state = ServerState::LEADER;
 
     // No more election timeouts when leader
+    m_leader_id = static_cast<int>(m_id);
     shut_down_election_timer();
     reset_heartbeat_timer();
     m_state.set_vote_for_no_one();
@@ -153,7 +156,7 @@ void raft::Node::run_follower_loop() {
                 }
 
                 reset_election_timer();
-
+                m_leader_id = arg.leader_id;
                 // this checks if there is not a match
                 // if the previous log index is greater than any index we have -> deny
                 // if the log term of the index is mismatched -> deny
@@ -540,16 +543,6 @@ int raft::Node::calculate_quorum() const {
     return num_voters / 2 + 1;
 }
 
-void raft::Node::run_server(const std::string &address) {
-    m_service = std::make_unique<RaftSeverImpl>(m_event_queue);
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
-    builder.RegisterService(m_service.get());
-    m_server = builder.BuildAndStart();
-    m_logger->info("gRPC Server listening on {}", address);
-    m_server->Wait();
-}
-
 // Blocking call that causes the node to run
 void raft::Node::run() {
     m_running = true;
@@ -561,7 +554,7 @@ void raft::Node::run() {
     });
 
     std::thread server_thread([this] {
-        run_server(m_cluster[m_id].address);
+        m_server.run(m_cluster[m_id].address);
     });
 
     while (m_running) {
@@ -578,8 +571,13 @@ void raft::Node::run() {
         }
     }
 
-    server_thread.join();
-    timer_thread.join();
+    if (server_thread.joinable()) {
+        server_thread.join();
+    }
+
+    if (timer_thread.joinable()) {
+        timer_thread.join();
+    }
 }
 
 std::string raft::server_state_to_str(ServerState state) {
@@ -598,6 +596,7 @@ std::string raft::server_state_to_str(ServerState state) {
 void raft::Node::become_candidate() {
     m_server_state = ServerState::CANDIDATE;
 
+    m_leader_id = -1;
     m_state.increment_term();
     m_state.set_voted_for(static_cast<int>(m_id));
     reset_election_timer();

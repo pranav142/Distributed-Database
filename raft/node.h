@@ -45,6 +45,7 @@ namespace raft {
                                                                             m_work_guard(
                                                                                 make_work_guard(io)),
                                                                             m_client(std::move(client)),
+                                                                            m_server(m_event_queue),
                                                                             m_election_timer_max_ms(
                                                                                 election_timer_max_ms),
                                                                             m_election_timer_min_ms(
@@ -120,12 +121,11 @@ namespace raft {
 
         int calculate_quorum() const;
 
-        void run_server(const std::string &address);
-
     private:
         unsigned int m_id;
         unsigned int m_commit_index = 0;
         unsigned int m_last_applied_index = 0;
+        int m_leader_id = -1;
 
         ServerState m_server_state = ServerState::FOLLOWER;
         PersistentState m_state;
@@ -154,8 +154,9 @@ namespace raft {
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work_guard;
 
         std::unique_ptr<Client> m_client = nullptr;
-        std::unique_ptr<RaftSeverImpl> m_service = nullptr;
-        std::unique_ptr<grpc::Server> m_server = nullptr;
+        gRPCServer m_server;
+        // std::unique_ptr<RaftSeverImpl> m_service = nullptr;
+        // std::unique_ptr<grpc::Server> m_server = nullptr;
 
         std::shared_ptr<spdlog::logger> m_logger;
     };

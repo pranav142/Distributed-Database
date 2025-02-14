@@ -28,7 +28,18 @@ message AppendEntriesResponse {
   bool success = 2;
 }
 
+message ClientRequest {
+  string command = 1;
+}
+
+message ClientResponse {
+  bool success = 1;
+  // used for rerouting request to leader
+  uint32 leader_id = 2;
+}
+
 service RaftService {
   rpc HandleVoteRequest(RequestVote) returns (RequestVoteResponse);
   rpc HandleAppendEntries(AppendEntries) returns (AppendEntriesResponse);
+  rpc HandleClientRequest(ClientRequest) returns (ClientResponse);
 }

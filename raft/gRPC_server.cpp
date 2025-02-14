@@ -4,71 +4,74 @@
 
 #include "gRPC_server.h"
 
-grpc::Status raft::RaftSeverImpl::HandleVoteRequest(grpc::ServerContext *context,
-                                                    const raft_gRPC::RequestVote *request_vote,
-                                                    raft_gRPC::RequestVoteResponse *response) {
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool is_done = false;
+#include <absl/log/check.h>
 
-    RequestVoteEvent request_vote_event{};
-    request_vote_event.candidate_id = request_vote->candidate_id();
-    request_vote_event.last_log_index = request_vote->last_log_index();
-    request_vote_event.last_log_term = request_vote->last_log_term();
-    request_vote_event.term = request_vote->term();
+void raft::gRPCServer::RequestVoteCallData::proceed() {
+    if (m_status == CREATE) {
+        m_status = PROCESS;
 
-    request_vote_event.callback = [&response, &mtx, &cv, &is_done](const RequestVoteResponse &_response) {
-        response->set_term(_response.term);
-        response->set_vote_granted(_response.vote_granted); {
-            std::lock_guard lock(mtx);
-            is_done = true;
-        }
-        cv.notify_one();
-    };
+        m_service->RequestHandleVoteRequest(&m_ctx, &m_request, &m_responder, m_cq, m_cq, this);
+    } else if (m_status == PROCESS) {
+        // create a new request vote call to indicate
+        // we can handle another one
+        new RequestVoteCallData(m_service, m_cq, m_event_queue);
 
-    m_event_queue.push(request_vote_event);
-
-    // waits until the response has been populated
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [&] { return is_done; });
+        RequestVoteEvent request_vote_event{};
+        request_vote_event.candidate_id = m_request.candidate_id();
+        request_vote_event.last_log_index = m_request.last_log_index();
+        request_vote_event.last_log_term = m_request.last_log_term();
+        request_vote_event.term = m_request.term();
+        request_vote_event.callback = [this](const RequestVoteResponse &_response) {
+            m_status = FINISH;
+            m_reply.set_term(_response.term);
+            m_reply.set_vote_granted(_response.vote_granted);
+            m_responder.Finish(m_reply, grpc::Status::OK, this);
+        };
+        m_event_queue.push(request_vote_event);
+    } else {
+        CHECK_EQ(m_status, FINISH);
+        delete this;
     }
-
-    return grpc::Status::OK;
 }
 
-grpc::Status raft::RaftSeverImpl::HandleAppendEntries(grpc::ServerContext *context,
-    const raft_gRPC::AppendEntries *request, raft_gRPC::AppendEntriesResponse *response) {
-     std::mutex mtx;
-    std::condition_variable cv;
-    bool is_done = false;
+void raft::gRPCServer::AppendEntryCallData::proceed() {
+    if (m_status == CREATE) {
+        m_status = PROCESS;
 
-    AppendEntriesEvent append_entries_event{};
-    append_entries_event.commit_index = request->commit_index();
-    append_entries_event.entries = request->entries();
-    append_entries_event.term = request->term();
-    append_entries_event.prev_log_index = request->prev_log_index();
-    append_entries_event.prev_log_term = request->prev_log_term();
-    append_entries_event.leader_id = request->leader_id();
+        m_service->RequestHandleAppendEntries(&m_ctx, &m_request, &m_responder, m_cq, m_cq, this);
+    } else if (m_status == PROCESS) {
+        // create new append entry call
+        // to indicate we can handle another
+        new AppendEntryCallData(m_service, m_cq, m_event_queue);
 
-    append_entries_event.callback = [&response, &mtx, &cv, &is_done](const AppendEntriesResponse &_response) {
-        response->set_term(_response.term);
-        response->set_success(_response.success);
-        {
-            std::lock_guard lock(mtx);
-            is_done = true;
-        }
-        cv.notify_one();
-    };
+        AppendEntriesEvent append_entries_event{};
+        append_entries_event.commit_index = m_request.commit_index();
+        append_entries_event.entries = m_request.entries();
+        append_entries_event.term = m_request.term();
+        append_entries_event.prev_log_index = m_request.prev_log_index();
+        append_entries_event.prev_log_term = m_request.prev_log_term();
+        append_entries_event.leader_id = m_request.leader_id();
+        append_entries_event.callback = [this](const AppendEntriesResponse &_response) {
+            m_status = FINISH;
+            m_reply.set_term(_response.term);
+            m_reply.set_success(_response.success);
+            m_responder.Finish(m_reply, grpc::Status::OK, this);
+        };
 
-    m_event_queue.push(append_entries_event);
-
-    // waits until the response has been populated
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [&] { return is_done; });
+        m_event_queue.push(append_entries_event);
+    } else {
+        CHECK_EQ(m_status, FINISH);
+        delete this;
     }
-
-    return grpc::Status::OK;
 }
 
+void raft::gRPCServer::handle_rpcs() {
+    new AppendEntryCallData(&m_service, m_cq.get(), m_event_queue);
+    new RequestVoteCallData(&m_service, m_cq.get(), m_event_queue);
+
+    void* tag;
+    bool ok;
+    while (m_cq->Next(&tag, &ok) && ok) {
+      static_cast<CallDataBase*>(tag)->proceed();
+    }
+}
