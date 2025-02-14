@@ -38,6 +38,16 @@ namespace raft {
         bool error;
     };
 
+    struct ClientRequestRPC {
+        std::string command;
+    };
+
+    struct ClientRequestResponse {
+        bool success;
+        bool redirect;
+        unsigned int leader_id;
+    };
+
     // Client Interface
     class Client {
     public:

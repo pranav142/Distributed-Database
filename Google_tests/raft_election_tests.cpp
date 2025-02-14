@@ -219,3 +219,6 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     // Ensure there is only one leader
     GTEST_ASSERT_TRUE(node_1.get_server_state() != raft::ServerState::LEADER);
 }
+
+TEST(ElectionTest, HandlesClientRequest) {
+}

@@ -231,6 +231,12 @@ void raft::Node::run_follower_loop() {
                 arg.callback(response);
                 m_logger->debug("Denying vote to candidate {} because candidate's log is not up-to-date",
                                 arg.candidate_id);
+            } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                m_logger->critical("Have not implemented Client Request Handling");
+                ClientRequestResponse response{};
+                response.success = false;
+                response.redirect = false;
+                response.leader_id = m_leader_id;
             }
         }, event);
     }
@@ -349,6 +355,12 @@ void raft::Node::run_candidate_loop() {
                                     arg.candidate_id);
                 }
                 arg.callback(response);
+            } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                m_logger->critical("Have not implemented Client Request Handling");
+                ClientRequestResponse response{};
+                response.success = false;
+                response.redirect = false;
+                response.leader_id = m_leader_id;
             }
         }, event);
 
@@ -527,6 +539,12 @@ void raft::Node::run_leader_loop() {
                             arg.candidate_id);
                     }
                     arg.callback(response);
+                } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                    m_logger->critical("Have not implemented Client Request Handling");
+                    ClientRequestResponse response{};
+                    response.success = false;
+                    response.redirect = false;
+                    response.leader_id = m_leader_id;
                 }
             }
         }, event);

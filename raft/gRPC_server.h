@@ -104,6 +104,29 @@ namespace raft {
             EventQueue<Event> &m_event_queue;
         };
 
+        class ClientRequestCallData final : public CallDataBase {
+        public:
+            ClientRequestCallData(raft_gRPC::RaftService::AsyncService *service,
+                                grpc::ServerCompletionQueue *cq, EventQueue<Event> &event_queue) : m_service(service),
+                m_cq(cq), m_status(CREATE), m_responder(&m_ctx), m_event_queue(event_queue) {
+                proceed();
+            }
+
+            void proceed() override;;
+
+        private:
+            raft_gRPC::RaftService::AsyncService *m_service;
+            grpc::ServerCompletionQueue *m_cq;
+            grpc::ServerContext m_ctx;
+            raft_gRPC::ClientRequest m_request;
+            raft_gRPC::ClientResponse m_reply;
+
+            grpc::ServerAsyncResponseWriter<raft_gRPC::ClientResponse> m_responder;
+
+            CallStatus m_status;
+            EventQueue<Event> &m_event_queue;
+        };
+
         void handle_rpcs();
 
         std::unique_ptr<grpc::ServerCompletionQueue> m_cq;

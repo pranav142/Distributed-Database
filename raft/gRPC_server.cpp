@@ -65,13 +65,39 @@ void raft::gRPCServer::AppendEntryCallData::proceed() {
     }
 }
 
+void raft::gRPCServer::ClientRequestCallData::proceed() {
+    if (m_status == CREATE) {
+        m_status = PROCESS;
+
+        m_service->RequestHandleClientRequest(&m_ctx, &m_request, &m_responder, m_cq, m_cq, this);
+    } else if (m_status == PROCESS) {
+        // create new append entry call
+        // to indicate we can handle another
+        new ClientRequestCallData(m_service, m_cq, m_event_queue);
+
+        ClientRequestEvent client_request_event{};
+        client_request_event.command = m_request.command();
+        client_request_event.callback = [this](const ClientRequestResponse &_response) {
+            m_status = FINISH;
+            m_reply.set_success(_response.success);
+            m_reply.set_leader_id(_response.leader_id);
+            m_responder.Finish(m_reply, grpc::Status::OK, this);
+        };
+
+        m_event_queue.push(client_request_event);
+    } else {
+        CHECK_EQ(m_status, FINISH);
+        delete this;
+    }
+}
+
 void raft::gRPCServer::handle_rpcs() {
     new AppendEntryCallData(&m_service, m_cq.get(), m_event_queue);
     new RequestVoteCallData(&m_service, m_cq.get(), m_event_queue);
 
-    void* tag;
+    void *tag;
     bool ok;
     while (m_cq->Next(&tag, &ok) && ok) {
-      static_cast<CallDataBase*>(tag)->proceed();
+        static_cast<CallDataBase *>(tag)->proceed();
     }
 }

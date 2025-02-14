@@ -49,8 +49,13 @@ namespace raft {
         unsigned int last_index_added;
     };
 
+    struct ClientRequestEvent {
+        std::string command;
+        std::function<void(ClientRequestResponse)> callback;
+    };
+
     typedef std::variant<ElectionTimeoutEvent, QuitEvent, RequestVoteResponseEvent, RequestVoteEvent, AppendEntriesEvent
-        , HeartBeatEvent, AppendEntriesResponseEvent> Event;
+        , HeartBeatEvent, AppendEntriesResponseEvent, ClientRequestEvent> Event;
 }
 
 #endif //EVENTS_H
