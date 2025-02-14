@@ -32,10 +32,7 @@ void raft::Node::set_current_term(unsigned int term) {
     m_state.set_current_term(term);
 }
 
-void raft::Node::append_log(const std::string &log) {
-    if (m_state.append_log(log) != SUCCESS) {
-        m_logger->error("Failed to append log");
-    }
+void raft::Node::append_log(const std::string &request) {
 }
 
 void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
@@ -400,22 +397,28 @@ void raft::Node::append_entries(unsigned int id) {
 
 void raft::Node::initialize_next_index() {
     unsigned int default_value = m_state.get_last_log_index() + 1;
-    m_next_index.resize(m_cluster.size(), default_value);
+    for (auto &[id, _]: m_cluster) {
+        m_next_index[id] = default_value;
+    }
 }
 
 void raft::Node::initialize_match_index() {
-    m_match_index.resize(m_cluster.size(), 0);
+    for (auto &[id, _]: m_cluster) {
+        m_match_index[id] = 0;
+    }
 }
 
 void raft::Node::update_commit_index() {
     unsigned int quorum = calculate_quorum();
-    std::vector v(m_match_index);
-    std::sort(v.begin(), v.end());
-    unsigned int commit_index = v[quorum - 1];
-
-    if (m_state.get_log_term(commit_index) == m_state.get_current_term()) {
-        m_commit_index = commit_index;
-        m_logger->debug("Updating commit_index to {}", commit_index);
+    std::vector<unsigned int> v;
+    for (auto &[_, match]: m_match_index) {
+        v.push_back(match);
+    }
+    std::ranges::sort(v);
+    unsigned int candidate_commit_index = v[quorum - 1];
+    if (m_state.get_log_term(candidate_commit_index) == m_state.get_current_term()) {
+        m_commit_index = candidate_commit_index;
+        m_logger->debug("Updating commit_index to {}", m_commit_index);
     }
 }
 
@@ -448,7 +451,6 @@ void raft::Node::run_leader_loop() {
                     response.term = m_state.get_current_term();
                     response.success = false;
                     arg.callback(response);
-                    // TODO: Bug in this logging
                     m_logger->debug(
                         "Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
                         arg.leader_id, arg.term, m_state.get_current_term());
@@ -481,6 +483,7 @@ void raft::Node::run_leader_loop() {
                 if (!arg.success) {
                     m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
                 } else {
+                    // TODO: Bug in this logging
                     m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id, m_next_index[arg.id],
                                     arg.last_index_added);
                     m_match_index[arg.id] = arg.last_index_added;

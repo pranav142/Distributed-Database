@@ -131,8 +131,9 @@ namespace raft {
         PersistentState m_state;
 
         // Only used in leader state
-        std::vector<unsigned int> m_next_index;
-        std::vector<unsigned int> m_match_index;
+        // maps ids to values
+        std::unordered_map<unsigned int, unsigned int> m_next_index;
+        std::unordered_map<unsigned int, unsigned int> m_match_index;
 
         // A map of ID's and corresponding IPs
         ClusterMap m_cluster;
