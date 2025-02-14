@@ -9,6 +9,7 @@
 #include "node.h"
 #include "gRPC_client.h"
 #include "logging.h"
+#include "lb.h"
 
 class MockClient final : public raft::Client {
 public:
@@ -130,8 +131,8 @@ TEST(ElectionTest, NodeElectionTest) {
     raft::Node node_1(0, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
                       raft::ELECTION_TIMER_MAX_MS);
     node_1.set_current_term(10);
-    node_1.append_log("x->2");
-    node_1.append_log("x->3");
+    // node_1.append_log("x->2");
+    // node_1.append_log("x->3");
 
     // these nodes will timeout first but should not end up as leader
 
@@ -145,8 +146,20 @@ TEST(ElectionTest, NodeElectionTest) {
                       raft::ELECTION_TIMER_MIN_MS);
     node_3.set_current_term(6);
 
+    bool success = true;
     std::thread stop_thread([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
+        for (int i = 0; i < 4; i++) {
+            raft_gRPC::ClientRequest request;
+            request.set_command("x->" + std::to_string(i));
+
+            raft_gRPC::ClientResponse response;
+            if (command_request(cluster_map[0].address, request, &response)) {
+                std::cout << response.leader_id() << " " << response.redirect() << " " << response.success() <<
+                        std::endl;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
         node_2.cancel();
         node_3.cancel();

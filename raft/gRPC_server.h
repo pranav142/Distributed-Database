@@ -43,7 +43,6 @@ namespace raft {
             builder.RegisterService(&m_service);
             m_cq = builder.AddCompletionQueue();
             m_server = builder.BuildAndStart();
-            std::cout << "Server listening on " << server_address << std::endl;
             handle_rpcs();
         }
 

@@ -10,6 +10,8 @@
 #include <thread>
 #include <boost/type.hpp>
 
+// TODO: Refactor to be cleaner
+// TODO: introduce stub and channel caching to reduce overhead when communicating to nodes
 namespace raft {
     enum class RPCType {
         REQUEST_VOTE,

@@ -4,7 +4,6 @@
 
 #include "gRPC_client.h"
 #include <grpcpp/grpcpp.h>
-#include <spdlog/spdlog.h>
 
 void raft::gRPCClient::request_vote(std::string address, const RequestVoteRPC &request_vote_rpc,
                                     std::function<void(RequestVoteResponse)> callback) {

@@ -64,11 +64,22 @@ add_library(raft
 target_include_directories(raft
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
 )
 
 target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
+
+
+set(LB_FILES
+        load_balancer/lb.cpp
+        load_balancer/lb.h
+)
+
+add_library(lb
+        ${LB_FILES}
+)
+
+target_link_libraries(lb PUBLIC protolib grpc++)
 
 add_executable(db
         main.cpp
@@ -98,14 +109,16 @@ add_executable(GTests_run
 target_link_libraries(GTests_run
         PRIVATE
         raft
+        lb
         GTest::gtest_main
 )
 
 target_include_directories(GTests_run
         PRIVATE
         # ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
+        # ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
         raft
+        load_balancer
 )
 
 include(GoogleTest)

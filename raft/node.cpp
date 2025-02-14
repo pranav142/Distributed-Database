@@ -237,6 +237,7 @@ void raft::Node::run_follower_loop() {
                 response.success = false;
                 response.redirect = false;
                 response.leader_id = m_leader_id;
+                arg.callback(response);
             }
         }, event);
     }
@@ -361,6 +362,8 @@ void raft::Node::run_candidate_loop() {
                 response.success = false;
                 response.redirect = false;
                 response.leader_id = m_leader_id;
+
+                arg.callback(response);
             }
         }, event);
 
@@ -489,7 +492,7 @@ void raft::Node::run_leader_loop() {
                 response.success = false;
                 arg.callback(response);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
-                m_logger->debug("Received AppendEntriesResponse");
+                m_logger->debug("Received AppendEntriesResponse from: ", arg.id);
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                     return;
@@ -499,11 +502,14 @@ void raft::Node::run_leader_loop() {
                     m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
                 } else {
                     // TODO: Bug in this logging
-                    m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id, m_next_index[arg.id],
-                                    arg.last_index_added);
-                    m_match_index[arg.id] = arg.last_index_added;
-                    m_next_index[arg.id] = arg.last_index_added + 1;
-                    update_commit_index();
+                    if (m_match_index[arg.id] != arg.last_index_added) {
+                        m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id,
+                                        m_next_index[arg.id],
+                                        arg.last_index_added);
+                        m_match_index[arg.id] = arg.last_index_added;
+                        m_next_index[arg.id] = arg.last_index_added + 1;
+                        update_commit_index();
+                    }
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
                 m_logger->warn("Received RequestVoteResponse in Leader state");
@@ -539,13 +545,14 @@ void raft::Node::run_leader_loop() {
                             arg.candidate_id);
                     }
                     arg.callback(response);
-                } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
-                    m_logger->critical("Have not implemented Client Request Handling");
-                    ClientRequestResponse response{};
-                    response.success = false;
-                    response.redirect = false;
-                    response.leader_id = m_leader_id;
                 }
+            } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                m_logger->critical("Have not implemented Client Request Handling");
+                ClientRequestResponse response{};
+                response.success = false;
+                response.redirect = false;
+                response.leader_id = m_leader_id;
+                arg.callback(response);
             }
         }, event);
 
@@ -574,6 +581,7 @@ void raft::Node::run() {
     std::thread server_thread([this] {
         m_server.run(m_cluster[m_id].address);
     });
+    m_logger->debug("Running gRPC server on: {}", m_cluster[m_id].address);
 
     while (m_running) {
         switch (m_server_state) {

@@ -94,6 +94,7 @@ void raft::gRPCServer::ClientRequestCallData::proceed() {
 void raft::gRPCServer::handle_rpcs() {
     new AppendEntryCallData(&m_service, m_cq.get(), m_event_queue);
     new RequestVoteCallData(&m_service, m_cq.get(), m_event_queue);
+    new ClientRequestCallData(&m_service, m_cq.get(), m_event_queue);
 
     void *tag;
     bool ok;

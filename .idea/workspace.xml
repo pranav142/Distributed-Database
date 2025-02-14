@@ -87,6 +87,7 @@
       <config projectName="db" targetName="libprotobuf-lite" />
       <config projectName="db" targetName="civil_time" />
       <config projectName="db" targetName="NightlyTest" />
+      <config projectName="db" targetName="lb" />
       <config projectName="db" targetName="upb_mem_lib" />
       <config projectName="db" targetName="minigzip64" />
       <config projectName="db" targetName="grpc_php_plugin" />
@@ -222,11 +223,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_election_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/raft.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/raft.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/client.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/events.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/events.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/gRPC_client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_client.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/gRPC_server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_server.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/gRPC_server.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_server.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
@@ -260,8 +262,6 @@
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/raft/node.h" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectApplicationVersion">
@@ -279,40 +279,45 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;CMake Application.ExperimentalTest.executor&quot;: &quot;Run&quot;,
-    &quot;CMake Application.grpc.executor&quot;: &quot;Run&quot;,
-    &quot;CMake Application.grpc_cpp_plugin.executor&quot;: &quot;Run&quot;,
-    &quot;CMake Application.gtest_main.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ElectionTest.CoreElectionLogic.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ElectionTest.NodeElectionTest.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ElectionTest.RequestVoteTest.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ElectionTest.SpliBrainTest.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ElectionTest.SuccessfulCandidateTransition.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.EventQueueTests.HandlesThreadSafety.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.PersistentStateAppendLog.HandlesValidLog.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.PersistentStateReadLog.GetsEntries.executor&quot;: &quot;Run&quot;,
-    &quot;Google Test.ReplaceLineTest.HandlesValidReplacement.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;cf.advertisement.text.has.clang-format&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;ctest.advertisement.all.test.configuration.is.created&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "CMake Application.ExperimentalTest.executor": "Run",
+    "CMake Application.grpc.executor": "Run",
+    "CMake Application.grpc_cpp_plugin.executor": "Run",
+    "CMake Application.gtest_main.executor": "Run",
+    "Google Test.ElectionTest.CoreElectionLogic.executor": "Run",
+    "Google Test.ElectionTest.NodeElectionTest.executor": "Run",
+    "Google Test.ElectionTest.RequestVoteTest.executor": "Run",
+    "Google Test.ElectionTest.SpliBrainTest.executor": "Run",
+    "Google Test.ElectionTest.SuccessfulCandidateTransition.executor": "Run",
+    "Google Test.EventQueueTests.HandlesThreadSafety.executor": "Run",
+    "Google Test.PersistentStateAppendLog.HandlesValidLog.executor": "Run",
+    "Google Test.PersistentStateReadLog.GetsEntries.executor": "Run",
+    "Google Test.ReplaceLineTest.HandlesValidReplacement.executor": "Run",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.advertisement.text.has.clang-format": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "ctest.advertisement.all.test.configuration.is.created": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "CMakeSettings",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Google Test.ElectionTest.NodeElectionTest">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="ElectionTest.CoreElectionLogic" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="CoreElectionLogic" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -343,7 +348,7 @@
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="PersistentStateReadLog.GetsEntries" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="PersistentStateReadLog" TEST_METHOD="GetsEntries" TEST_MODE="SUITE_TEST">
+    <configuration name="PersistentStateReadLog.GetsEntries" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="PersistentStateReadLog" TEST_METHOD="GetsEntries" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
@@ -875,6 +880,11 @@
       </method>
     </configuration>
     <configuration name="kernel_timeout_internal" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="kernel_timeout_internal" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="lb" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="lb" CONFIG_NAME="Debug">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -1544,6 +1554,7 @@
       <item itemvalue="CMake Application.zlib" />
       <item itemvalue="CMake Application.zlibstatic" />
       <item itemvalue="CMake Application.protolib" />
+      <item itemvalue="CMake Application.lb" />
       <item itemvalue="CTest Application.All CTest" />
       <item itemvalue="Google Test.GTests_run" />
       <item itemvalue="Google Test.PersistentStateReadLog.GetsEntries" />
@@ -1589,6 +1600,7 @@
       <workItem from="1739392625647" duration="7796000" />
       <workItem from="1739479714957" duration="8283000" />
       <workItem from="1739500697208" duration="13200000" />
+      <workItem from="1739569117920" duration="5443000" />
     </task>
     <servers />
   </component>
