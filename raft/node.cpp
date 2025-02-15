@@ -110,6 +110,7 @@ void raft::Node::become_follower(unsigned int term) {
     m_state.set_current_term(term);
     m_state.set_vote_for_no_one();
     log_current_state();
+    clear_pending_requests();
 }
 
 void raft::Node::become_leader() {
@@ -174,7 +175,13 @@ void raft::Node::run_follower_loop() {
 
                 // TODO: add state machine processing when commit index is updated
                 m_commit_index = arg.commit_index;
-                m_state.add_entries(arg.prev_log_index + 1, arg.entries);
+                if (m_state.add_entries(arg.prev_log_index + 1, arg.entries) != SUCCESS) {
+                    AppendEntriesResponse response{};
+                    response.success = false;
+                    response.term = m_state.get_current_term();
+                    arg.callback(response);
+                    return;
+                }
 
                 AppendEntriesResponse response{};
                 response.success = true;
@@ -426,6 +433,24 @@ void raft::Node::initialize_match_index() {
     }
 }
 
+void raft::Node::process_pending_requests() {
+    ClientRequestResponse response{};
+    response.success = true;
+    response.redirect = false;
+    response.leader_id = m_leader_id;
+
+    auto new_end = std::ranges::remove_if(m_pending_requests,
+                                          [this, &response](const PendingRequest &req) {
+                                              if (req.waiting_commit_index <= m_commit_index) {
+                                                  req.callback(response);
+                                                  return true;
+                                              }
+                                              return false;
+                                          }).begin();
+
+    m_pending_requests.erase(new_end, m_pending_requests.end());
+}
+
 void raft::Node::update_commit_index() {
     unsigned int quorum = calculate_quorum();
     std::vector<unsigned int> v;
@@ -434,10 +459,26 @@ void raft::Node::update_commit_index() {
     }
     std::ranges::sort(v);
     unsigned int candidate_commit_index = v[quorum - 1];
+
     if (m_state.get_log_term(candidate_commit_index) == m_state.get_current_term()) {
         m_commit_index = candidate_commit_index;
+        process_pending_requests();
         m_logger->debug("Updating commit_index to {}", m_commit_index);
     }
+}
+
+void raft::Node::clear_pending_requests() {
+    ClientRequestResponse response{};
+    response.success = false;
+    response.redirect = false;
+    response.leader_id = m_leader_id;
+
+    // indicate the request failed
+    for (auto &request: m_pending_requests) {
+        request.callback(response);
+    }
+
+    m_pending_requests.clear();
 }
 
 void raft::Node::run_leader_loop() {
@@ -492,7 +533,7 @@ void raft::Node::run_leader_loop() {
                 response.success = false;
                 arg.callback(response);
             } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
-                m_logger->debug("Received AppendEntriesResponse from: ", arg.id);
+                m_logger->debug("Received AppendEntriesResponse from: {}", arg.id);
                 if (arg.term > m_state.get_current_term()) {
                     become_follower(arg.term);
                     return;
@@ -504,7 +545,7 @@ void raft::Node::run_leader_loop() {
                     // TODO: Bug in this logging
                     if (m_match_index[arg.id] != arg.last_index_added) {
                         m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id,
-                                        m_next_index[arg.id],
+                                        m_next_index[arg.id] - 1,
                                         arg.last_index_added);
                         m_match_index[arg.id] = arg.last_index_added;
                         m_next_index[arg.id] = arg.last_index_added + 1;
@@ -547,12 +588,24 @@ void raft::Node::run_leader_loop() {
                     arg.callback(response);
                 }
             } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
-                m_logger->critical("Have not implemented Client Request Handling");
-                ClientRequestResponse response{};
-                response.success = false;
-                response.redirect = false;
-                response.leader_id = m_leader_id;
-                arg.callback(response);
+                if (m_state.append_log(arg.command) != SUCCESS) {
+                    m_logger->warn("Failed to take clients request and append log");
+                    ClientRequestResponse response{};
+                    response.success = false;
+                    response.redirect = false;
+                    response.leader_id = m_leader_id;
+                    arg.callback(response);
+                    return;
+                }
+
+                // this will cause a append entry request to
+                // each of the followers
+                m_event_queue.push(HeartBeatEvent{});
+
+                PendingRequest request{};
+                request.waiting_commit_index = m_state.get_last_log_index();
+                request.callback = std::move(arg.callback);
+                m_pending_requests.push_back(request);
             }
         }, event);
 

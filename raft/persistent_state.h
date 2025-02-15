@@ -50,7 +50,7 @@ namespace raft {
 
         void delete_log(unsigned int index);
 
-        void add_entries(unsigned int start_index, const std::string &entries);
+        raft::ErrorCode add_entries(unsigned int start_index, const std::string &entries);
 
         [[nodiscard]] bool has_voted_for_no_one() const;
 

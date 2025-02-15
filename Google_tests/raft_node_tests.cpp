@@ -111,7 +111,7 @@ TEST(ElectionTest, RequestVoteTest) {
 }
 
 
-TEST(ElectionTest, NodeElectionTest) {
+TEST(ElectionTest, NodeLogReplicationTest) {
     raft::initialize_global_logging();
 
     auto client1 = std::make_unique<raft::gRPCClient>();
@@ -146,19 +146,21 @@ TEST(ElectionTest, NodeElectionTest) {
                       raft::ELECTION_TIMER_MIN_MS);
     node_3.set_current_term(6);
 
-    bool success = true;
+    double average_time_ms = 0.0;
     std::thread stop_thread([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 100; i++) {
             raft_gRPC::ClientRequest request;
             request.set_command("x->" + std::to_string(i));
 
             raft_gRPC::ClientResponse response;
-            if (command_request(cluster_map[0].address, request, &response)) {
-                std::cout << response.leader_id() << " " << response.redirect() << " " << response.success() <<
-                        std::endl;
-            }
+
+            auto start = std::chrono::high_resolution_clock::now();
+            bool success = command_request(cluster_map[0].address, request, &response);
+            auto end = std::chrono::high_resolution_clock::now();
+            average_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         }
+        average_time_ms /= 100.0;
         std::this_thread::sleep_for(std::chrono::milliseconds(2 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
         node_2.cancel();
@@ -181,6 +183,8 @@ TEST(ElectionTest, NodeElectionTest) {
     n2.join();
     n3.join();
     stop_thread.join();
+
+    std::cout << "Average request time: " << average_time_ms << "ms" << std::endl;
 
     // Ensure there is only one leader
     GTEST_ASSERT_TRUE(node_1.get_server_state() == raft::ServerState::LEADER);

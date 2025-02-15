@@ -103,7 +103,7 @@ add_executable(GTests_run
         Google_tests/raft_utils_tests.cpp
         Google_tests/raft_persistent_state_tests.cpp
         Google_tests/raft_event_queue_tests.cpp
-        Google_tests/raft_election_tests.cpp
+        Google_tests/raft_node_tests.cpp
 )
 
 target_link_libraries(GTests_run

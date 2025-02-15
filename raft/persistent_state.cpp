@@ -65,7 +65,7 @@ raft::ErrorCode raft::PersistentState::append_log(const std::string &entry) cons
 
 raft::ErrorCode raft::PersistentState::append_log(const Log &log) const {
     if (log.index < get_last_log_index() || log.term < get_last_log_term()) {
-        std::cerr << "Not allowed to append a lof that is a lower index or term than previous" << std::endl;
+        return OUT_OF_DATE_LOG;
     }
     return append_to_file(m_log_file_path, serialize_log(log));
 }
@@ -239,22 +239,26 @@ void raft::PersistentState::delete_logs(unsigned int index) const {
 }
 
 // deletes entries from start index to end and then replaces that with the following entries
-void raft::PersistentState::add_entries(unsigned int start_index, const std::string &entries) {
+raft::ErrorCode raft::PersistentState::add_entries(unsigned int start_index, const std::string &entries) {
     delete_logs(start_index);
 
     std::istringstream ss(entries);
     std::string s;
 
     while (std::getline(ss, s, '\n')) {
-        if (!deserialize_log(s)) {
+        std::optional<Log> log = deserialize_log(s);
+        if (log == std::nullopt) {
             std::cerr << "Failed to deserialize persistent state" << std::endl;
-            exit(1);
+            return LOG_FORMAT_ISSUE;
         }
-        if (append_log(deserialize_log(s).value()) != SUCCESS) {
+        ErrorCode ret = append_log(log.value());
+        if (ret != SUCCESS) {
             std::cerr << "Failed to append log" << std::endl;
-            exit(1);
+            return ret;
         }
     }
+
+    return SUCCESS;
 }
 
 bool raft::PersistentState::has_voted_for_no_one() const {

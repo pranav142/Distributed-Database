@@ -8,7 +8,6 @@
 #include "proto/raft.grpc.pb.h"
 #include "client.h"
 #include <thread>
-#include <boost/type.hpp>
 
 // TODO: Refactor to be cleaner
 // TODO: introduce stub and channel caching to reduce overhead when communicating to nodes

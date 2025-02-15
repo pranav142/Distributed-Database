@@ -14,7 +14,7 @@ namespace raft {
         INVALID_HEADER_INFO,
         FILE_NOT_FOUND,
         LOG_FORMAT_ISSUE,
-
+        OUT_OF_DATE_LOG,
     };
 };
 

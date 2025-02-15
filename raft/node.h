@@ -115,7 +115,11 @@ namespace raft {
 
         void initialize_match_index();
 
+        void process_pending_requests();
+
         void update_commit_index();
+
+        void clear_pending_requests();
 
         void run_leader_loop();
 
@@ -159,6 +163,17 @@ namespace raft {
         // std::unique_ptr<grpc::Server> m_server = nullptr;
 
         std::shared_ptr<spdlog::logger> m_logger;
+
+        // This struct stores requests that are
+        // waiting for a log to be commited
+        // before getting a response
+        struct PendingRequest {
+            // this stores the commit index value needed before a response can be sent
+            unsigned int waiting_commit_index;
+            std::function<void(const ClientRequestResponse &response)> callback;
+        };
+
+        std::vector<PendingRequest> m_pending_requests;
     };
 
     std::string server_state_to_str(ServerState state);
