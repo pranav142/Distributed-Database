@@ -81,16 +81,27 @@ add_library(lb
 
 target_link_libraries(lb PUBLIC protolib grpc++)
 
-add_executable(db
+set(DB_FILES
+        db/db.cpp
+        db/db.h
+        db/command.cpp
+        db/command.h
+)
+
+add_library(db
+        ${DB_FILES}
+)
+
+add_executable(main
         main.cpp
 )
 
-target_link_libraries(db
+target_link_libraries(main
         PRIVATE
         raft
 )
 
-target_include_directories(db
+target_include_directories(main
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
@@ -104,12 +115,15 @@ add_executable(GTests_run
         Google_tests/raft_persistent_state_tests.cpp
         Google_tests/raft_event_queue_tests.cpp
         Google_tests/raft_node_tests.cpp
+        Google_tests/db_command_tests.cpp
+        Google_tests/db_tests.cpp
 )
 
 target_link_libraries(GTests_run
         PRIVATE
         raft
         lb
+        db
         GTest::gtest_main
 )
 
@@ -119,6 +133,7 @@ target_include_directories(GTests_run
         # ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
         raft
         load_balancer
+        db
 )
 
 include(GoogleTest)
