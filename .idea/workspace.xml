@@ -224,12 +224,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Google_tests/db_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/raft/FSM.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.h" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -359,6 +359,7 @@
     "Google Test.DbTests.SetValueTest.executor": "Run",
     "Google Test.ElectionTest.CoreElectionLogic.executor": "Run",
     "Google Test.ElectionTest.NodeElectionTest.executor": "Debug",
+    "Google Test.ElectionTest.NodeLogReplicationTest.executor": "Run",
     "Google Test.ElectionTest.RequestVoteTest.executor": "Run",
     "Google Test.ElectionTest.SpliBrainTest.executor": "Run",
     "Google Test.ElectionTest.SuccessfulCandidateTransition.executor": "Run",
@@ -384,32 +385,32 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Google Test.DbTests.GetNonExistingValues">
-    <configuration name="CommandDeserializationTests.GenericSetCommand" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="CommandDeserializationTests" TEST_METHOD="GenericSetCommand" TEST_MODE="SUITE_TEST">
+  <component name="RunManager" selected="Google Test.ElectionTest.NodeLogReplicationTest">
+    <configuration name="DbTests.DeleteValueTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="DeleteValueTest" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="CommandDeserializationTests.GenericSetCommandWithNewLine" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="CommandDeserializationTests" TEST_METHOD="GenericSetCommandWithNewLine" TEST_MODE="SUITE_TEST">
+    <configuration name="DbTests.GetNonExistingValues" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="GetNonExistingValues" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="DbTests.DeleteValueTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="DeleteValueTest" TEST_MODE="SUITE_TEST">
+    <configuration name="DbTests.SetValueTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="SetValueTest" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="DbTests.GetNonExistingValues" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="GetNonExistingValues" TEST_MODE="SUITE_TEST">
+    <configuration name="ElectionTest.CoreElectionLogic" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="CoreElectionLogic" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="DbTests.SetValueTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="DbTests" TEST_METHOD="SetValueTest" TEST_MODE="SUITE_TEST">
+    <configuration name="ElectionTest.NodeLogReplicationTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="NodeLogReplicationTest" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
@@ -1635,19 +1636,19 @@
       <item itemvalue="CMake Application.main" />
       <item itemvalue="CTest Application.All CTest" />
       <item itemvalue="Google Test.GTests_run" />
+      <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
+      <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
       <item itemvalue="Google Test.DbTests.DeleteValueTest" />
       <item itemvalue="Google Test.DbTests.GetNonExistingValues" />
       <item itemvalue="Google Test.DbTests.SetValueTest" />
-      <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommand" />
-      <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommandWithNewLine" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
+        <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
         <item itemvalue="Google Test.DbTests.GetNonExistingValues" />
         <item itemvalue="Google Test.DbTests.DeleteValueTest" />
         <item itemvalue="Google Test.DbTests.SetValueTest" />
-        <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommandWithNewLine" />
-        <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommand" />
       </list>
     </recent_temporary>
   </component>
@@ -1679,7 +1680,7 @@
       <workItem from="1739479714957" duration="8283000" />
       <workItem from="1739500697208" duration="13200000" />
       <workItem from="1739569117920" duration="11737000" />
-      <workItem from="1739652086658" duration="4592000" />
+      <workItem from="1739652086658" duration="7865000" />
     </task>
     <servers />
   </component>

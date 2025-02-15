@@ -32,12 +32,6 @@ void raft::Node::set_current_term(unsigned int term) {
     m_state.set_current_term(term);
 }
 
-void raft::Node::append_log(const std::string &request) {
-    if (!m_state.append_log(request)) {
-        m_logger->error("Failed to append log");
-    }
-}
-
 void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
     if (!ec) {
         m_event_queue.push(ElectionTimeoutEvent{});
@@ -173,8 +167,6 @@ void raft::Node::run_follower_loop() {
                     return;
                 }
 
-                // TODO: add state machine processing when commit index is updated
-                m_commit_index = arg.commit_index;
                 if (m_state.add_entries(arg.prev_log_index + 1, arg.entries) != SUCCESS) {
                     AppendEntriesResponse response{};
                     response.success = false;
@@ -182,6 +174,8 @@ void raft::Node::run_follower_loop() {
                     arg.callback(response);
                     return;
                 }
+
+                update_commit_index(arg.commit_index);
 
                 AppendEntriesResponse response{};
                 response.success = true;
@@ -451,7 +445,9 @@ void raft::Node::process_pending_requests() {
     m_pending_requests.erase(new_end, m_pending_requests.end());
 }
 
-void raft::Node::update_commit_index() {
+// this function checks the majority replicated
+// index on each machine
+void raft::Node::calculate_new_commit_index() {
     unsigned int quorum = calculate_quorum();
     std::vector<unsigned int> v;
     for (auto &[_, match]: m_match_index) {
@@ -459,12 +455,31 @@ void raft::Node::update_commit_index() {
     }
     std::ranges::sort(v);
     unsigned int candidate_commit_index = v[quorum - 1];
-
     if (m_state.get_log_term(candidate_commit_index) == m_state.get_current_term()) {
-        m_commit_index = candidate_commit_index;
-        process_pending_requests();
+        update_commit_index(candidate_commit_index);
         m_logger->debug("Updating commit_index to {}", m_commit_index);
+        process_pending_requests();
     }
+}
+
+void raft::Node::update_commit_index(unsigned int commit_index) {
+    // commit index can only increase
+    // do not process indicies less than or
+    // equal to ours
+    if (m_commit_index >= commit_index) {
+        return;
+    }
+    m_commit_index = commit_index;
+    // applies commands from our last applied index
+    // to the current commit index
+    for (int i = m_last_applied_index + 1; i <= m_commit_index; i++) {
+        std::optional<Log> log = m_state.read_log(i);
+        if (log == std::nullopt) {
+            m_logger->critical("Logs have been corrupted could not read log index: {}", i);
+        }
+        m_fsm->apply_command(log.value().entry);
+    }
+    m_last_applied_index = commit_index;
 }
 
 void raft::Node::clear_pending_requests() {
@@ -498,9 +513,9 @@ void raft::Node::run_leader_loop() {
                 should_exit = true;
             } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
                 m_logger->debug("Heartbeat timeout received; sending AppendEntries to followers");
-                for (auto &pair: m_cluster) {
-                    if (pair.first == m_id) continue;
-                    append_entries(pair.first);
+                for (auto &[id, _]: m_cluster) {
+                    if (id == m_id) continue;
+                    append_entries(id);
                 }
                 reset_heartbeat_timer();
             } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
@@ -542,14 +557,13 @@ void raft::Node::run_leader_loop() {
                 if (!arg.success) {
                     m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
                 } else {
-                    // TODO: Bug in this logging
                     if (m_match_index[arg.id] != arg.last_index_added) {
                         m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id,
                                         m_next_index[arg.id] - 1,
                                         arg.last_index_added);
                         m_match_index[arg.id] = arg.last_index_added;
                         m_next_index[arg.id] = arg.last_index_added + 1;
-                        update_commit_index();
+                        calculate_new_commit_index();
                     }
                 }
             } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
@@ -598,7 +612,7 @@ void raft::Node::run_leader_loop() {
                     return;
                 }
 
-                // this will cause a append entry request to
+                // this will cause an append entry request to
                 // each of the followers
                 m_event_queue.push(HeartBeatEvent{});
 

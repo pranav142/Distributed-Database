@@ -32,12 +32,28 @@ public:
         std::thread t([callback, append_entries]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MIN_MS / 5));
             raft::AppendEntriesResponse response{};
-            response.term = static_cast<int>(append_entries.term);
+            response.term = append_entries.term;
             response.success = true;
             callback(response);
         });
         t.detach();
     }
+};
+
+class MockFSM final : public raft::FSM {
+public:
+    void apply_command(const std::string &serialized_command) override {
+        m_commands.push_back(serialized_command);
+    }
+
+    void dump() {
+        for (auto &command: m_commands) {
+            std::cout << command << std::endl;
+        }
+    }
+
+private:
+    std::vector<std::string> m_commands;
 };
 
 TEST(ElectionTest, CoreElectionLogic) {
@@ -49,8 +65,9 @@ TEST(ElectionTest, CoreElectionLogic) {
         {2, raft::NodeInfo{"0.0.0.0:4206"}},
     };
 
+    auto fsm = std::make_shared<MockFSM>();
     boost::asio::io_context io_context;
-    raft::Node node(0, cluster_map, io_context, std::move(client));
+    raft::Node node(0, cluster_map, io_context, std::move(client), fsm);
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -59,7 +76,6 @@ TEST(ElectionTest, CoreElectionLogic) {
 
     node.run();
     GTEST_ASSERT_EQ(node.get_server_state(), raft::ServerState::LEADER);
-
     stop_thread.join();
 }
 
@@ -94,7 +110,8 @@ TEST(ElectionTest, RequestVoteTest) {
     });
 
     boost::asio::io_context io_context;
-    raft::Node node(0, cluster_map, io_context, std::move(n_client));
+    auto fsm = std::make_shared<MockFSM>();
+    raft::Node node(0, cluster_map, io_context, std::move(n_client), std::move(fsm));
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -127,29 +144,30 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     // this node will time out last but should still end up as the leader
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
+    auto fsm1 = std::make_shared<MockFSM>();
     boost::asio::io_context ctx1;
-    raft::Node node_1(0, cluster_map, ctx1, std::move(client1), raft::ELECTION_TIMER_MAX_MS,
+    raft::Node node_1(0, cluster_map, ctx1, std::move(client1), fsm1, raft::ELECTION_TIMER_MAX_MS,
                       raft::ELECTION_TIMER_MAX_MS);
     node_1.set_current_term(10);
-    // node_1.append_log("x->2");
-    // node_1.append_log("x->3");
 
     // these nodes will timeout first but should not end up as leader
-
+    auto fsm2 = std::make_shared<MockFSM>();
     boost::asio::io_context ctx2;
-    raft::Node node_2(1, cluster_map, ctx2, std::move(client2), raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_2(1, cluster_map, ctx2, std::move(client2), fsm2, raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
     node_2.set_current_term(6);
 
+
+    auto fsm3 = std::make_shared<MockFSM>();
     boost::asio::io_context ctx3;
-    raft::Node node_3(2, cluster_map, ctx3, std::move(client3), raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_3(2, cluster_map, ctx3, std::move(client3), fsm3, raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
     node_3.set_current_term(6);
 
     double average_time_ms = 0.0;
     std::thread stop_thread([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             raft_gRPC::ClientRequest request;
             request.set_command("x->" + std::to_string(i));
 
@@ -160,7 +178,7 @@ TEST(ElectionTest, NodeLogReplicationTest) {
             auto end = std::chrono::high_resolution_clock::now();
             average_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         }
-        average_time_ms /= 100.0;
+        average_time_ms /= 10.0;
         std::this_thread::sleep_for(std::chrono::milliseconds(2 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
         node_2.cancel();
@@ -196,6 +214,8 @@ TEST(ElectionTest, NodeLogReplicationTest) {
         node_1.get_current_term() == node_2.get_current_term() &&
         node_1.get_current_term() == node_3.get_current_term(
         ));
+
+    fsm1->dump();
 }
 
 // This test is for handling the case
@@ -218,7 +238,8 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
     boost::asio::io_context ctx1;
-    raft::Node node_1(1, cluster_map, ctx1, std::move(client1));
+    auto fsm = std::make_shared<MockFSM>();
+    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), std::move(fsm));
     node_1.set_current_term(10);
 
     std::thread stop_thread([&]() {

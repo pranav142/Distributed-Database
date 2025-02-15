@@ -16,6 +16,7 @@
 #include "client.h"
 #include "gRPC_server.h"
 #include "timer.h"
+#include "FSM.h"
 
 
 namespace raft {
@@ -32,7 +33,7 @@ namespace raft {
     class Node {
     public:
         Node(unsigned int id, const ClusterMap &cluster, boost::asio::io_context &io,
-             std::unique_ptr<Client> client, unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
+             std::unique_ptr<Client> client, std::shared_ptr<FSM> fsm, unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
              unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
              unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS) : m_id(id),
                                                                             m_state(
@@ -53,7 +54,8 @@ namespace raft {
                                                                             m_heart_beat_interval_ms(
                                                                                 heartbeat_interval_ms),
                                                                             m_logger(spdlog::stdout_color_mt(
-                                                                                "node_" + std::to_string(id))) {
+                                                                                "node_" + std::to_string(id))),
+                                                                            m_fsm(std::move(fsm)) {
         }
 
         ServerState get_server_state() const;
@@ -67,8 +69,6 @@ namespace raft {
         unsigned int get_current_term() const;
 
         void set_current_term(unsigned int term);
-
-        void append_log(const std::string &log);
 
         void on_election_timeout(const boost::system::error_code &ec);
 
@@ -117,7 +117,9 @@ namespace raft {
 
         void process_pending_requests();
 
-        void update_commit_index();
+        void calculate_new_commit_index();
+
+        void update_commit_index(unsigned int commit_index);
 
         void clear_pending_requests();
 
@@ -145,7 +147,7 @@ namespace raft {
         EventQueue<Event> m_event_queue;
         bool m_running = false;
 
-        // Time
+        // Timers
         boost::asio::io_context &m_io;
         Timer m_election_timer;
         Timer m_heartbeat_timer;
@@ -159,8 +161,6 @@ namespace raft {
 
         std::unique_ptr<Client> m_client = nullptr;
         gRPCServer m_server;
-        // std::unique_ptr<RaftSeverImpl> m_service = nullptr;
-        // std::unique_ptr<grpc::Server> m_server = nullptr;
 
         std::shared_ptr<spdlog::logger> m_logger;
 
@@ -174,6 +174,8 @@ namespace raft {
         };
 
         std::vector<PendingRequest> m_pending_requests;
+
+        std::shared_ptr<FSM> m_fsm;
     };
 
     std::string server_state_to_str(ServerState state);

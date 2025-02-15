@@ -55,6 +55,7 @@ set(RAFT_FILES
         raft/timer.h
         raft/logging.cpp
         raft/logging.h
+        raft/FSM.h
 )
 
 add_library(raft
