@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace raft {
+namespace utils {
     struct NodeInfo {
         std::string address;
 
@@ -19,7 +19,11 @@ namespace raft {
         }
     };
 
+    // node ids to node information
     typedef std::unordered_map<unsigned int, NodeInfo> ClusterMap;
+
+    // Cluster names to clusters
+    typedef std::unordered_map<std::string, ClusterMap> Clusters;
 }
 
 

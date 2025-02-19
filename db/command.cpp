@@ -50,3 +50,7 @@ std::optional<db::Command> db::deserialize_command(const std::string &serialized
 
     return Command{type.value(), key_str, value_str};
 }
+
+std::optional<std::string> get_key(const std::string &serialized) {
+    return db::deserialize_command(serialized)->key;
+}

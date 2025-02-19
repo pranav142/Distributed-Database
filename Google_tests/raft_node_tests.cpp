@@ -59,10 +59,10 @@ private:
 TEST(ElectionTest, CoreElectionLogic) {
     std::unique_ptr<MockClient> client = std::make_unique<MockClient>();
 
-    raft::ClusterMap cluster_map{
-        {0, raft::NodeInfo{"0.0.0.0:6969"}},
-        {1, raft::NodeInfo{"0.0.0.0:7070"}},
-        {2, raft::NodeInfo{"0.0.0.0:4206"}},
+    utils::ClusterMap cluster_map{
+        {0, utils::NodeInfo{"0.0.0.0:6969"}},
+        {1, utils::NodeInfo{"0.0.0.0:7070"}},
+        {2, utils::NodeInfo{"0.0.0.0:4206"}},
     };
 
     auto fsm = std::make_shared<MockFSM>();
@@ -92,10 +92,11 @@ TEST(ElectionTest, RequestVoteTest) {
 
     std::unique_ptr<MockClient> n_client = std::make_unique<MockClient>();
 
-    raft::ClusterMap cluster_map{
-        {0, raft::NodeInfo{"127.0.0.1:6969"}},
-        {1, raft::NodeInfo{"0.0.0.0:7070"}},
-        {2, raft::NodeInfo{"0.0.0.0:4206"}},
+
+    utils::ClusterMap cluster_map{
+        {0, utils::NodeInfo{"127.0.0.1:6969"}},
+        {1, utils::NodeInfo{"0.0.0.0:7070"}},
+        {2, utils::NodeInfo{"0.0.0.0:4206"}},
     };
 
 
@@ -135,10 +136,10 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     auto client2 = std::make_unique<raft::gRPCClient>();
     auto client3 = std::make_unique<raft::gRPCClient>();
 
-    raft::ClusterMap cluster_map{
-        {0, raft::NodeInfo{"127.0.0.1:6969"}},
-        {1, raft::NodeInfo{"127.0.0.1:7070"}},
-        {2, raft::NodeInfo{"127.0.0.1:4206"}},
+    utils::ClusterMap cluster_map{
+        {0, utils::NodeInfo{"127.0.0.1:6969"}},
+        {1, utils::NodeInfo{"127.0.0.1:7070"}},
+        {2, utils::NodeInfo{"127.0.0.1:4206"}},
     };
 
     // this node will time out last but should still end up as the leader
@@ -174,7 +175,7 @@ TEST(ElectionTest, NodeLogReplicationTest) {
             raft_gRPC::ClientResponse response;
 
             auto start = std::chrono::high_resolution_clock::now();
-            bool success = command_request(cluster_map[0].address, request, &response);
+            bool success = loadbalancer::command_request(cluster_map[0].address, request, &response);
             auto end = std::chrono::high_resolution_clock::now();
             average_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         }
@@ -228,10 +229,10 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
 
     utils::initialize_global_logging();
 
-    raft::ClusterMap cluster_map{
-        {0, raft::NodeInfo{"127.0.0.1:6969"}},
-        {1, raft::NodeInfo{"127.0.0.1:7070"}},
-        {2, raft::NodeInfo{"127.0.0.1:4206"}},
+    utils::ClusterMap cluster_map{
+        {0, utils::NodeInfo{"127.0.0.1:6969"}},
+        {1, utils::NodeInfo{"127.0.0.1:7070"}},
+        {2, utils::NodeInfo{"127.0.0.1:4206"}},
     };
 
     // this node will time out last but should still end up as the leader

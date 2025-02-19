@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.29)
 project(db LANGUAGES CXX)
 
+find_package(TBB REQUIRED)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # --- Fetch GoogleTest ---
@@ -41,8 +43,6 @@ set(RAFT_FILES
         raft/utils.h
         raft/node.cpp
         raft/node.h
-        raft/cluster.cpp
-        raft/cluster.h
         raft/events.h
         raft/client.h
         raft/gRPC_client.cpp
@@ -54,11 +54,14 @@ set(RAFT_FILES
 )
 
 set(UTIL_FILES
-    utils/logging.cpp
-    utils/logging.h
-    utils/timer.h
-    utils/timer.cpp
-    utils/event_queue.h
+        utils/logging.cpp
+        utils/logging.h
+        utils/timer.h
+        utils/timer.cpp
+        utils/event_queue.h
+        utils/cluster.h
+        utils/consistent_hashing.cpp
+        utils/consistent_hashing.h
 )
 
 add_library(utils
@@ -95,7 +98,13 @@ add_library(lb
         ${LB_FILES}
 )
 
-target_link_libraries(lb PUBLIC protolib grpc++)
+target_include_directories(lb
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
+)
+
+target_link_libraries(lb PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils TBB::tbb)
 
 set(DB_FILES
         db/db.cpp
@@ -133,6 +142,7 @@ add_executable(GTests_run
         Google_tests/raft_node_tests.cpp
         Google_tests/db_command_tests.cpp
         Google_tests/db_tests.cpp
+        Google_tests/utils_consistent_hashing_tests.cpp
 )
 
 target_link_libraries(GTests_run
@@ -152,6 +162,7 @@ target_include_directories(GTests_run
         load_balancer
         utils
         db
+        TBB::tbb
 )
 
 include(GoogleTest)

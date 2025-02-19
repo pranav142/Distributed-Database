@@ -8,6 +8,6 @@
 #include <spdlog/spdlog.h>
 
 void utils::initialize_global_logging() {
-  spdlog::set_level(spdlog::level::debug);
-  spdlog::set_pattern("[%H:%M:%S] [%n] [%^%l%$] %v");
+    spdlog::set_level(spdlog::level::debug);
+    spdlog::set_pattern("[%H:%M:%S] [%n] [%^%l%$] %v");
 }

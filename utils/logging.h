@@ -11,7 +11,7 @@
 #define LOGGING_H
 
 namespace utils {
-void initialize_global_logging();
+    void initialize_global_logging();
 }
 
 #endif // LOGGING_H
