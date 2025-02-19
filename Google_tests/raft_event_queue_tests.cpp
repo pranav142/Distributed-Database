@@ -6,7 +6,7 @@
 #include "event_queue.h"
 
 TEST(EventQueueTests, HandlesValidInputs) {
-    raft::EventQueue<int> event_queue;
+    utils::EventQueue<int> event_queue;
 
     event_queue.push(2);
     int return_val = event_queue.pop();
@@ -14,7 +14,7 @@ TEST(EventQueueTests, HandlesValidInputs) {
 }
 
 TEST(EventQueueTests, HandlesThreadSafety) {
-    raft::EventQueue<int> event_queue;
+    utils::EventQueue<int> event_queue;
 
     // put this thread to sleep to test whether pop will sleep until data is available
     std::thread t([&event_queue]() {

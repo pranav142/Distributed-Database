@@ -43,7 +43,6 @@ set(RAFT_FILES
         raft/node.h
         raft/cluster.cpp
         raft/cluster.h
-        raft/event_queue.h
         raft/events.h
         raft/client.h
         raft/gRPC_client.cpp
@@ -51,12 +50,28 @@ set(RAFT_FILES
         raft/gRPC_server.cpp
         raft/gRPC_server.h
         raft/client.cpp
-        raft/timer.cpp
-        raft/timer.h
-        raft/logging.cpp
-        raft/logging.h
         raft/FSM.h
 )
+
+set(UTIL_FILES
+    utils/logging.cpp
+    utils/logging.h
+    utils/timer.h
+    utils/timer.cpp
+    utils/event_queue.h
+)
+
+add_library(utils
+        ${UTIL_FILES}
+)
+
+target_include_directories(utils
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
+)
+
+target_link_libraries(utils PUBLIC spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 
 add_library(raft
         ${RAFT_FILES}
@@ -66,10 +81,10 @@ target_include_directories(raft
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
-target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
-
+target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils)
 
 set(LB_FILES
         load_balancer/lb.cpp
@@ -125,6 +140,7 @@ target_link_libraries(GTests_run
         raft
         lb
         db
+        utils
         GTest::gtest_main
 )
 
@@ -134,6 +150,7 @@ target_include_directories(GTests_run
         # ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
         raft
         load_balancer
+        utils
         db
 )
 

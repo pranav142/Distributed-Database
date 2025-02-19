@@ -10,9 +10,8 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-
-namespace raft {
-    void initialize_global_logging();
+namespace utils {
+void initialize_global_logging();
 }
 
-#endif //LOGGING_H
+#endif // LOGGING_H

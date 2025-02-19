@@ -14,7 +14,7 @@
 namespace raft {
     class gRPCServer {
     public:
-        explicit gRPCServer(EventQueue<Event> &event_queue) : m_event_queue(event_queue) {
+        explicit gRPCServer(utils::EventQueue<Event> &event_queue) : m_event_queue(event_queue) {
         }
 
         ~gRPCServer() {
@@ -59,7 +59,7 @@ namespace raft {
         class RequestVoteCallData final : public CallDataBase {
         public:
             RequestVoteCallData(raft_gRPC::RaftService::AsyncService *service,
-                                grpc::ServerCompletionQueue *cq, EventQueue<Event> &event_queue) : m_service(service),
+                                grpc::ServerCompletionQueue *cq, utils::EventQueue<Event> &event_queue) : m_service(service),
                 m_cq(cq), m_status(CREATE), m_responder(&m_ctx), m_event_queue(event_queue) {
                 proceed();
             };
@@ -77,13 +77,13 @@ namespace raft {
 
 
             CallStatus m_status;
-            EventQueue<Event> &m_event_queue;
+            utils::EventQueue<Event> &m_event_queue;
         };
 
         class AppendEntryCallData final : public CallDataBase {
         public:
             AppendEntryCallData(raft_gRPC::RaftService::AsyncService *service,
-                                grpc::ServerCompletionQueue *cq, EventQueue<Event> &event_queue) : m_service(service),
+                                grpc::ServerCompletionQueue *cq, utils::EventQueue<Event> &event_queue) : m_service(service),
                 m_cq(cq), m_status(CREATE), m_responder(&m_ctx), m_event_queue(event_queue) {
                 proceed();
             }
@@ -100,13 +100,13 @@ namespace raft {
             grpc::ServerAsyncResponseWriter<raft_gRPC::AppendEntriesResponse> m_responder;
 
             CallStatus m_status;
-            EventQueue<Event> &m_event_queue;
+            utils::EventQueue<Event> &m_event_queue;
         };
 
         class ClientRequestCallData final : public CallDataBase {
         public:
             ClientRequestCallData(raft_gRPC::RaftService::AsyncService *service,
-                                grpc::ServerCompletionQueue *cq, EventQueue<Event> &event_queue) : m_service(service),
+                                grpc::ServerCompletionQueue *cq, utils::EventQueue<Event> &event_queue) : m_service(service),
                 m_cq(cq), m_status(CREATE), m_responder(&m_ctx), m_event_queue(event_queue) {
                 proceed();
             }
@@ -123,7 +123,7 @@ namespace raft {
             grpc::ServerAsyncResponseWriter<raft_gRPC::ClientResponse> m_responder;
 
             CallStatus m_status;
-            EventQueue<Event> &m_event_queue;
+            utils::EventQueue<Event> &m_event_queue;
         };
 
         void handle_rpcs();
@@ -131,7 +131,7 @@ namespace raft {
         std::unique_ptr<grpc::ServerCompletionQueue> m_cq;
         raft_gRPC::RaftService::AsyncService m_service;
         std::unique_ptr<grpc::Server> m_server;
-        EventQueue<Event> &m_event_queue;
+        utils::EventQueue<Event> &m_event_queue;
     };
 }
 

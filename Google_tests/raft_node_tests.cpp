@@ -80,7 +80,7 @@ TEST(ElectionTest, CoreElectionLogic) {
 }
 
 TEST(ElectionTest, RequestVoteTest) {
-    raft::initialize_global_logging();
+    utils::initialize_global_logging();
 
     raft::gRPCClient client;
 
@@ -129,7 +129,7 @@ TEST(ElectionTest, RequestVoteTest) {
 
 
 TEST(ElectionTest, NodeLogReplicationTest) {
-    raft::initialize_global_logging();
+    utils::initialize_global_logging();
 
     auto client1 = std::make_unique<raft::gRPCClient>();
     auto client2 = std::make_unique<raft::gRPCClient>();
@@ -226,7 +226,7 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     auto client2 = std::make_unique<raft::gRPCClient>();
     auto client3 = std::make_unique<raft::gRPCClient>();
 
-    raft::initialize_global_logging();
+    utils::initialize_global_logging();
 
     raft::ClusterMap cluster_map{
         {0, raft::NodeInfo{"127.0.0.1:6969"}},
