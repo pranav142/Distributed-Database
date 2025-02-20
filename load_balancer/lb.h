@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "consistent_hashing.h"
+#include "logging.h"
 
 namespace loadbalancer {
     class LoadBalancer {
@@ -22,6 +23,7 @@ namespace loadbalancer {
                                                        m_logger(spdlog::stdout_color_mt("load balancer")),
                                                        m_get_key(std::move(get_key)),
                                                        m_consistent_hash(replicas, hasher) {
+            initialize_clusters();
         }
 
         ~LoadBalancer() = default;

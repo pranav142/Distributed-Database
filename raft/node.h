@@ -31,16 +31,17 @@ namespace raft {
 
     class Node {
     public:
-        Node(unsigned int id, const utils::ClusterMap &cluster, boost::asio::io_context &io,
+        Node(unsigned int id, const utils::ClusterMap &cluster,
              std::unique_ptr<Client> client, std::shared_ptr<FSM> fsm,
              unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
              unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
              unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS)
-            : m_id(id), m_state("log_" + std::to_string(id) + ".txt"),
-              m_cluster(cluster), m_io(io), m_election_timer(io),
-              m_heartbeat_timer(io), m_strand(make_strand(io)),
-              m_work_guard(make_work_guard(io)), m_client(std::move(client)),
-              m_server(m_event_queue), m_election_timer_max_ms(election_timer_max_ms),
+            : m_id(id),
+              m_state("log_" + std::to_string(id) + ".txt"),
+              m_cluster(cluster),
+              m_client(std::move(client)),
+              m_server(m_event_queue),
+              m_election_timer_max_ms(election_timer_max_ms),
               m_election_timer_min_ms(election_timer_min_ms),
               m_heart_beat_interval_ms(heartbeat_interval_ms),
               m_logger(spdlog::stdout_color_mt("node_" + std::to_string(id))),
@@ -137,19 +138,18 @@ namespace raft {
         utils::EventQueue<Event> m_event_queue;
         bool m_running = false;
 
-        // Timers
-        boost::asio::io_context &m_io;
-        utils::Timer m_election_timer;
-        utils::Timer m_heartbeat_timer;
+        boost::asio::io_context m_io = boost::asio::io_context();
+        boost::asio::strand<boost::asio::io_context::executor_type> m_strand = make_strand(m_io);
+        // Work guard is needed to keep the io context running when there is no work
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
+        m_work_guard = make_work_guard(m_io);
+
+        utils::Timer m_election_timer = utils::Timer(m_io);
+        utils::Timer m_heartbeat_timer = utils::Timer(m_io);
         unsigned int m_election_timer_min_ms;
         unsigned int m_election_timer_max_ms;
         unsigned int m_heart_beat_interval_ms;
 
-        boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
-        // Work guard is needed to keep the io context running even when there is no
-        // work
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
-        m_work_guard;
 
         std::unique_ptr<Client> m_client = nullptr;
         gRPCServer m_server;

@@ -236,7 +236,7 @@ void raft::Node::run_follower_loop() {
                 m_logger->critical("Have not implemented Client Request Handling");
                 ClientRequestResponse response{};
                 response.success = false;
-                response.redirect = false;
+                response.redirect = true;
                 response.leader_id = m_leader_id;
                 arg.callback(response);
             }

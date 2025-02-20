@@ -66,8 +66,7 @@ TEST(ElectionTest, CoreElectionLogic) {
     };
 
     auto fsm = std::make_shared<MockFSM>();
-    boost::asio::io_context io_context;
-    raft::Node node(0, cluster_map, io_context, std::move(client), fsm);
+    raft::Node node(0, cluster_map, std::move(client), fsm);
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -110,9 +109,8 @@ TEST(ElectionTest, RequestVoteTest) {
                             });
     });
 
-    boost::asio::io_context io_context;
     auto fsm = std::make_shared<MockFSM>();
-    raft::Node node(0, cluster_map, io_context, std::move(n_client), std::move(fsm));
+    raft::Node node(0, cluster_map, std::move(n_client), std::move(fsm));
 
     std::thread stop_thread([&node]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
@@ -146,22 +144,19 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
     auto fsm1 = std::make_shared<MockFSM>();
-    boost::asio::io_context ctx1;
-    raft::Node node_1(0, cluster_map, ctx1, std::move(client1), fsm1, raft::ELECTION_TIMER_MAX_MS,
+    raft::Node node_1(0, cluster_map, std::move(client1), fsm1, raft::ELECTION_TIMER_MAX_MS,
                       raft::ELECTION_TIMER_MAX_MS);
     node_1.set_current_term(10);
 
     // these nodes will timeout first but should not end up as leader
     auto fsm2 = std::make_shared<MockFSM>();
-    boost::asio::io_context ctx2;
-    raft::Node node_2(1, cluster_map, ctx2, std::move(client2), fsm2, raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_2(1, cluster_map, std::move(client2), fsm2, raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
     node_2.set_current_term(6);
 
 
     auto fsm3 = std::make_shared<MockFSM>();
-    boost::asio::io_context ctx3;
-    raft::Node node_3(2, cluster_map, ctx3, std::move(client3), fsm3, raft::ELECTION_TIMER_MIN_MS,
+    raft::Node node_3(2, cluster_map, std::move(client3), fsm3, raft::ELECTION_TIMER_MIN_MS,
                       raft::ELECTION_TIMER_MIN_MS);
     node_3.set_current_term(6);
 
@@ -238,9 +233,8 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     // this node will time out last but should still end up as the leader
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
-    boost::asio::io_context ctx1;
     auto fsm = std::make_shared<MockFSM>();
-    raft::Node node_1(1, cluster_map, ctx1, std::move(client1), std::move(fsm));
+    raft::Node node_1(1, cluster_map, std::move(client1), std::move(fsm));
     node_1.set_current_term(10);
 
     std::thread stop_thread([&]() {

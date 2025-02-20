@@ -25,12 +25,14 @@ bool loadbalancer::LoadBalancer::process_request(const std::string &serialized_c
         m_logger->warn("Could not find a node to allocate key to");
         return false;
     }
+    m_logger->debug("Sending request: {} to Cluster: {}", serialized_command, cluster_name.value());
 
     request.set_command(serialized_command);
 
     for (int i = 0; i < MAX_TRIES; i++) {
         if (send_request_to_leader(cluster_name.value(), request, &response))
             return true;
+        m_logger->warn("Failed to send request: {} to leader trying again", serialized_command);
         // wait till we send another request so
         // the raft cluster can converge
         std::this_thread::sleep_for(std::chrono::milliseconds(NEXT_ATTEMPT_DELAY_MS));
@@ -66,38 +68,35 @@ bool loadbalancer::LoadBalancer::send_request_to_leader(const std::string &shard
                                                         raft_gRPC::ClientResponse *response) {
     utils::ClusterMap cluster_map = m_clusters[shard];
     std::optional<std::string> leader_address = get_cached_leader(shard);
+    bool success;
 
-    if (!leader_address.has_value()) {
+    if (leader_address == std::nullopt) {
         for (const auto &[id, node_info]: cluster_map) {
-            if (command_request(node_info.address, request, response)) {
-                if (response->redirect()) {
-                    leader_address = cluster_map.at(response->leader_id()).address;
-                } else {
-                    leader_address = node_info.address;
-                }
-                update_leader_cache(shard, leader_address.value());
+            success = command_request(node_info.address, request, response);
+            if (!success) {
+                continue;
+            }
+
+            if (response->success()) {
+                update_leader_cache(shard, cluster_map.at(id).address);
+                return true;
+            }
+
+            if (response->redirect()) {
+                leader_address = cluster_map.at(response->leader_id()).address;
+                update_leader_cache(shard, cluster_map.at(response->leader_id()).address);
                 break;
             }
         }
     }
 
-    if (leader_address.has_value()) {
-        bool success = command_request(leader_address.value(), request, response);
-        if (!success) {
-            m_leader_cache.erase(shard);
-            return false;
-        }
-
-        if (response->redirect()) {
-            std::string new_leader = cluster_map.at(response->leader_id()).address;
-            update_leader_cache(shard, new_leader);
-            success = command_request(new_leader, request, response);
-            return success;
-        }
-        return success;
+    success = command_request(leader_address.value(), request, response);
+    if (!success) {
+        m_leader_cache.erase(shard);
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 

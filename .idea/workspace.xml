@@ -225,24 +225,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Google_tests/utils_consistent_hashing_tests.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/consistent_hashing.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/consistent_hashing.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/command.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/db/command.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/command.h" beforeDir="false" afterPath="$PROJECT_DIR$/db/command.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/load_balancer/lb.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/load_balancer/lb.h" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/cluster.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/cluster.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/event_queue.h" beforeDir="false" afterPath="$PROJECT_DIR$/utils/event_queue.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/logging.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/utils/logging.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/logging.h" beforeDir="false" afterPath="$PROJECT_DIR$/utils/logging.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/timer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/utils/timer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/timer.h" beforeDir="false" afterPath="$PROJECT_DIR$/utils/timer.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -384,6 +375,7 @@
     "Google Test.ElectionTest.SuccessfulCandidateTransition.executor": "Run",
     "Google Test.EventQueueTests.HandlesThreadSafety.executor": "Run",
     "Google Test.GTests_run.executor": "Run",
+    "Google Test.LoadBalancerTests.HandlesRequestRouting.executor": "Run",
     "Google Test.PersistentStateAppendLog.HandlesValidLog.executor": "Run",
     "Google Test.PersistentStateReadLog.GetsEntries.executor": "Run",
     "Google Test.ReplaceLineTest.HandlesValidReplacement.executor": "Run",
@@ -405,18 +397,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Google Test.ElectionTest.HandlesOfflineNodesTest">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="CommandDeserializationTests.GenericSetCommand" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="CommandDeserializationTests" TEST_METHOD="GenericSetCommand" TEST_MODE="SUITE_TEST">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-        <option name="BeforeTestRunTask" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Google Test.LoadBalancerTests.HandlesRequestRouting">
     <configuration name="ElectionTest.CoreElectionLogic" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="CoreElectionLogic" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -442,6 +423,12 @@
       </method>
     </configuration>
     <configuration name="GTests_run" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="LoadBalancerTests.HandlesRequestRouting" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="LoadBalancerTests" TEST_METHOD="HandlesRequestRouting" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
@@ -583,6 +570,11 @@
       </method>
     </configuration>
     <configuration name="NightlyUpdate" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="NightlyUpdate" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -1662,19 +1654,19 @@
       <item itemvalue="CMake Application.main" />
       <item itemvalue="CTest Application.All CTest" />
       <item itemvalue="Google Test.GTests_run" />
+      <item itemvalue="Google Test.LoadBalancerTests.HandlesRequestRouting" />
       <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
       <item itemvalue="Google Test.ElectionTest.HandlesOfflineNodesTest" />
       <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
       <item itemvalue="Google Test.ElectionTest.RequestVoteTest" />
-      <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommand" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Google Test.LoadBalancerTests.HandlesRequestRouting" />
         <item itemvalue="Google Test.ElectionTest.HandlesOfflineNodesTest" />
         <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
         <item itemvalue="Google Test.ElectionTest.RequestVoteTest" />
         <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
-        <item itemvalue="Google Test.CommandDeserializationTests.GenericSetCommand" />
       </list>
     </recent_temporary>
   </component>
@@ -1709,6 +1701,7 @@
       <workItem from="1739652086658" duration="12056000" />
       <workItem from="1739862871620" duration="2012000" />
       <workItem from="1739925665181" duration="14304000" />
+      <workItem from="1740006632095" duration="6334000" />
     </task>
     <servers />
   </component>
