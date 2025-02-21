@@ -7,23 +7,27 @@
 
 #include <sstream>
 
-std::string command_type_to_str(db::CommandType type) {
+std::string db::command_type_to_str(db::CommandType type) {
     switch (type) {
-        case db::CommandType::SET:
-            return "SET";
-        case db::CommandType::DELETE:
+        case CommandType::GET:
+            return "GET";
+        case CommandType::DELETE:
             return "DELETE";
+        case CommandType::SET:
+            return "SET";
         default:
             return "UNKNOWN";
     }
 }
 
-std::optional<db::CommandType> command_type_from_str(const std::string &str) {
+std::optional<db::CommandType> db::command_type_from_str(const std::string &str) {
     switch (str[0]) {
-        case 'S':
-            return db::CommandType::SET;
+        case 'G':
+            return CommandType::GET;
         case 'D':
-            return db::CommandType::DELETE;
+            return CommandType::DELETE;
+        case 'S':
+            return CommandType::SET;
         default:
             return std::nullopt;
     }
@@ -31,7 +35,12 @@ std::optional<db::CommandType> command_type_from_str(const std::string &str) {
 
 std::string db::serialize_command(const Command &command) {
     std::stringstream ss;
-    ss << command_type_to_str(command.type) << " " << command.key << " " << command.value;
+    ss << command_type_to_str(command.type) << " " << command.key << " ";
+    if (command.value.empty()) {
+        ss << "null";
+    } else {
+        ss << command.value;
+    }
     return ss.str();
 }
 
@@ -44,8 +53,12 @@ std::optional<db::Command> db::deserialize_command(const std::string &serialized
     }
 
     std::optional<db::CommandType> type = command_type_from_str(type_str);
-    if (type == std::nullopt) {
+    if (!type.has_value()) {
         return std::nullopt;
+    }
+
+    if (value_str == "null") {
+        value_str = "";
     }
 
     return Command{type.value(), key_str, value_str};

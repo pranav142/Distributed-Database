@@ -8,11 +8,18 @@
 #include <string>
 
 namespace raft {
+    struct FSMResponse {
+        bool success;
+        std::string data;
+    };
+
     class FSM {
     public:
         virtual ~FSM() = default;
 
-        virtual void apply_command(const std::string &serialized_command) = 0;
+        virtual FSMResponse apply_command(const std::string &serialized_command) = 0;
+
+        virtual FSMResponse query_state(const std::string &serialized_command) = 0;
     };
 }
 

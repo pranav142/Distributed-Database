@@ -499,6 +499,7 @@ void raft::Node::calculate_new_commit_index() {
 }
 
 void raft::Node::update_commit_index(unsigned int commit_index) {
+    raft::FSMResponse response;
     // commit index can only increase
     // do not process indicies less than or
     // equal to ours
@@ -513,7 +514,11 @@ void raft::Node::update_commit_index(unsigned int commit_index) {
         if (log == std::nullopt) {
             m_logger->critical("Logs have been corrupted could not read log index: {}", i);
         }
-        m_fsm->apply_command(log.value().entry);
+        response = m_fsm->apply_command(log.value().entry);
+        if (response.success == false) {
+            m_logger->critical("Failed to apply command {} to State Machine; Reason: {}", log.value().entry,
+                               response.data);
+        }
     }
     m_last_applied_index = commit_index;
 }
@@ -689,7 +694,7 @@ void raft::Node::run_leader_loop() {
                     // lease
                     m_event_queue.push(HeartBeatEvent{});
                 }
-            } , event);
+            }, event);
 
         if (should_exit) {
             return;
@@ -753,4 +758,3 @@ std::string raft::server_state_to_str(ServerState state) {
             return "";
     }
 }
-

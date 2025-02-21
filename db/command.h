@@ -10,6 +10,7 @@
 
 namespace db {
     enum class CommandType {
+        GET,
         SET,
         DELETE
     };
@@ -25,6 +26,10 @@ namespace db {
     std::optional<Command> deserialize_command(const std::string &serialized);
 
     std::optional<std::string> get_key(const std::string &serialized);
+
+    std::optional<CommandType> command_type_from_str(const std::string &str);
+
+    std::string command_type_to_str(CommandType type);
 }
 
 

@@ -14,13 +14,24 @@
 
 namespace db {
 
+    struct Response {
+        bool success;
+        std::string data;
+    };
+
     class DB {
     public:
         DB() = default;
 
         ~DB() = default;
 
-        void apply_command(const Command &command);
+        // This is for commands that modify
+        // the state of the DB
+        Response apply_command(const Command &command);
+
+        // This is for commands that do
+        // not modify the state of the DB
+        Response query_state(const Command &command);
 
         std::optional<std::string> get_value(const std::string &key);
 

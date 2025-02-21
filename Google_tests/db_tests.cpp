@@ -13,7 +13,8 @@ TEST(DbTests, SetValueTest) {
         .value = "10",
     };
 
-    db.apply_command(command);
+    auto response = db.apply_command(command);
+    GTEST_ASSERT_TRUE(response.success);
     GTEST_ASSERT_TRUE(db.get_value("key") == "10");
 }
 
@@ -25,13 +26,14 @@ TEST(DbTests, DeleteValueTest) {
         .value = "10",
     };
 
-    db.apply_command(command);
+    auto response = db.apply_command(command);
+    GTEST_ASSERT_TRUE(response.success);
 
     command.type = db::CommandType::DELETE;
     command.key = "key";
 
-    db.apply_command(command);
-
+    response = db.apply_command(command);
+    GTEST_ASSERT_TRUE(response.success);
     GTEST_ASSERT_TRUE(db.get_value("key") == std::nullopt);
 }
 
@@ -40,4 +42,24 @@ TEST(DbTests, GetNonExistingValues) {
 
     auto value = db.get_value("key");
     GTEST_ASSERT_TRUE(value == std::nullopt);
+}
+
+TEST(DbTests, QueryValidStateCommand) {
+    db::DB db;
+
+    db::Command command{
+        .type = db::CommandType::SET,
+        .key = "key",
+        .value = "10",
+    };
+
+    auto response = db.apply_command(command);
+    GTEST_ASSERT_TRUE(response.success);
+
+    command.type = db::CommandType::GET;
+    command.key = "key";
+
+    response = db.query_state(command);
+    GTEST_ASSERT_TRUE(response.success);
+    GTEST_ASSERT_TRUE(response.data == "10");
 }

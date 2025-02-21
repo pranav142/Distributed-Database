@@ -6,7 +6,7 @@
 #include "command.h"
 
 TEST(CommandSerializationTests, GenericSetCommand) {
-    db::Command command {
+    db::Command command{
         .type = db::CommandType::SET,
         .key = "key",
         .value = "10"
@@ -14,6 +14,17 @@ TEST(CommandSerializationTests, GenericSetCommand) {
 
     std::string serialization = serialize_command(command);
     GTEST_ASSERT_EQ(serialization, "SET key 10");
+}
+
+TEST(CommandSerializationTests, GenericReadCommand) {
+    db::Command command{
+        .type = db::CommandType::GET,
+        .key = "key",
+        .value = "",
+    };
+
+    std::string serialization = serialize_command(command);
+    GTEST_ASSERT_EQ(serialization, "GET key null");
 }
 
 TEST(CommandDeserializationTests, GenericSetCommand) {
@@ -34,4 +45,14 @@ TEST(CommandDeserializationTests, GenericSetCommandWithNewLine) {
     GTEST_ASSERT_EQ(command->type, db::CommandType::SET);
     GTEST_ASSERT_EQ(command->key, "key");
     GTEST_ASSERT_EQ(command->value, "30");
+}
+
+TEST(CommandDeserializationTests, GenericReadCommand) {
+    std::string serialization = "GET key null";
+
+    std::optional<db::Command> command = db::deserialize_command(serialization);
+    GTEST_ASSERT_TRUE(command != std::nullopt);
+    GTEST_ASSERT_EQ(command->type, db::CommandType::GET);
+    GTEST_ASSERT_EQ(command->key, "key");
+    GTEST_ASSERT_EQ(command->value, "");
 }

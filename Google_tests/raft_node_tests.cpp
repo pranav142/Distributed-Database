@@ -42,8 +42,13 @@ public:
 
 class MockFSM final : public raft::FSM {
 public:
-    void apply_command(const std::string &serialized_command) override {
+    raft::FSMResponse apply_command(const std::string &serialized_command) override {
         m_commands.push_back(serialized_command);
+        return raft::FSMResponse{true, ""};
+    }
+
+    raft::FSMResponse query_state(const std::string &serialized_command) override {
+        return raft::FSMResponse{true, ""};
     }
 
     void dump() {
