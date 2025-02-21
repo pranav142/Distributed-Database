@@ -140,24 +140,26 @@ TEST(ElectionTest, NodeLogReplicationTest) {
         {2, utils::NodeInfo{"127.0.0.1:4206"}},
     };
 
-    // this node will time out last but should still end up as the leader
-    // by setting the min and max election time to same value
-    // we set exactly how frequently the node will be timing out
+    // this node will time out at the max election time
     auto fsm1 = std::make_shared<MockFSM>();
-    raft::Node node_1(0, cluster_map, std::move(client1), fsm1, raft::ELECTION_TIMER_MAX_MS,
-                      raft::ELECTION_TIMER_MAX_MS);
+    raft::TimerSettings timer_settings;
+    timer_settings.election_timer_max_ms = raft::ELECTION_TIMER_MAX_MS;
+    timer_settings.election_timer_min_ms = raft::ELECTION_TIMER_MAX_MS;
+
+    raft::Node node_1(0, cluster_map, std::move(client1), fsm1, timer_settings);
     node_1.set_current_term(10);
 
-    // these nodes will timeout first but should not end up as leader
+    // these nodes will timeout exactly at the minimum election time
+    timer_settings.election_timer_max_ms = raft::ELECTION_TIMER_MIN_MS;
+    timer_settings.election_timer_min_ms = raft::ELECTION_TIMER_MIN_MS;
+
     auto fsm2 = std::make_shared<MockFSM>();
-    raft::Node node_2(1, cluster_map, std::move(client2), fsm2, raft::ELECTION_TIMER_MIN_MS,
-                      raft::ELECTION_TIMER_MIN_MS);
+    raft::Node node_2(1, cluster_map, std::move(client2), fsm2, timer_settings);
     node_2.set_current_term(6);
 
 
     auto fsm3 = std::make_shared<MockFSM>();
-    raft::Node node_3(2, cluster_map, std::move(client3), fsm3, raft::ELECTION_TIMER_MIN_MS,
-                      raft::ELECTION_TIMER_MIN_MS);
+    raft::Node node_3(2, cluster_map, std::move(client3), fsm3, timer_settings);
     node_3.set_current_term(6);
 
     double average_time_ms = 0.0;

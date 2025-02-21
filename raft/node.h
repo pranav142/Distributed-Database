@@ -29,21 +29,24 @@ namespace raft {
         LEADER,
     };
 
+    struct TimerSettings {
+        unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS;
+        unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS;
+        unsigned int heart_beat_interval_ms = HEART_BEAT_INTERVAL_MS;
+        unsigned int lease_timer_ms = HEART_BEAT_INTERVAL_MS * 2;
+    };
+
     class Node {
     public:
         Node(unsigned int id, const utils::ClusterMap &cluster,
              std::unique_ptr<Client> client, std::shared_ptr<FSM> fsm,
-             unsigned int election_timer_min_ms = ELECTION_TIMER_MIN_MS,
-             unsigned int election_timer_max_ms = ELECTION_TIMER_MAX_MS,
-             unsigned int heartbeat_interval_ms = HEART_BEAT_INTERVAL_MS)
+             TimerSettings timer_settings = {})
             : m_id(id),
               m_state("log_" + std::to_string(id) + ".txt"),
               m_cluster(cluster),
               m_client(std::move(client)),
               m_server(m_event_queue),
-              m_election_timer_max_ms(election_timer_max_ms),
-              m_election_timer_min_ms(election_timer_min_ms),
-              m_heart_beat_interval_ms(heartbeat_interval_ms),
+              m_timer_settings(timer_settings),
               m_logger(spdlog::stdout_color_mt("node_" + std::to_string(id))),
               m_fsm(std::move(fsm)) {
         }
@@ -146,10 +149,8 @@ namespace raft {
 
         utils::Timer m_election_timer = utils::Timer(m_io);
         utils::Timer m_heartbeat_timer = utils::Timer(m_io);
-        unsigned int m_election_timer_min_ms;
-        unsigned int m_election_timer_max_ms;
-        unsigned int m_heart_beat_interval_ms;
-
+        utils::Timer m_heart_beat_timer = utils::Timer(m_io);
+        TimerSettings m_timer_settings;
 
         std::unique_ptr<Client> m_client = nullptr;
         gRPCServer m_server;

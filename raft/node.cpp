@@ -41,7 +41,7 @@ void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
 }
 
 void raft::Node::reset_election_timer() {
-    unsigned int random_time_ms = generate_random_number(m_election_timer_min_ms, m_election_timer_max_ms);
+    unsigned int random_time_ms = generate_random_number(m_timer_settings.election_timer_min_ms, m_timer_settings.election_timer_max_ms);
     m_election_timer.set(random_time_ms, [this](const boost::system::error_code &ec) {
         on_election_timeout(ec);
     });
@@ -56,7 +56,7 @@ void raft::Node::on_heartbeat_timeout(const boost::system::error_code &ec) {
 }
 
 void raft::Node::reset_heartbeat_timer() {
-    m_heartbeat_timer.set(m_heart_beat_interval_ms, [this](const boost::system::error_code &ec) {
+    m_heartbeat_timer.set(m_timer_settings.heart_beat_interval_ms, [this](const boost::system::error_code &ec) {
         on_heartbeat_timeout(ec);
     });
 }
