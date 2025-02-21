@@ -71,6 +71,12 @@ namespace raft {
 
         void reset_heartbeat_timer();
 
+        auto on_lease_timeout(const boost::system::error_code &ec);
+
+        void reset_lease_timer();
+
+        void shut_down_lease_timer();
+
         void shut_down_heartbeat_timer();
 
         void log_current_state() const;
@@ -103,7 +109,7 @@ namespace raft {
         bool is_log_more_up_to_date(unsigned int last_log_index,
                                     unsigned int last_log_term) const;
 
-        void append_entries(unsigned int id);
+        void append_entries(unsigned int id, unsigned int lease_id);
 
         void initialize_next_index();
 
@@ -149,7 +155,7 @@ namespace raft {
 
         utils::Timer m_election_timer = utils::Timer(m_io);
         utils::Timer m_heartbeat_timer = utils::Timer(m_io);
-        utils::Timer m_heart_beat_timer = utils::Timer(m_io);
+        utils::Timer m_lease_timer = utils::Timer(m_io);
         TimerSettings m_timer_settings;
 
         std::unique_ptr<Client> m_client = nullptr;

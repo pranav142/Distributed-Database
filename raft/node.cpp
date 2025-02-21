@@ -41,11 +41,13 @@ void raft::Node::on_election_timeout(const boost::system::error_code &ec) {
 }
 
 void raft::Node::reset_election_timer() {
-    unsigned int random_time_ms = generate_random_number(m_timer_settings.election_timer_min_ms, m_timer_settings.election_timer_max_ms);
+    unsigned int random_time_ms = generate_random_number(m_timer_settings.election_timer_min_ms,
+                                                         m_timer_settings.election_timer_max_ms);
     m_election_timer.set(random_time_ms, [this](const boost::system::error_code &ec) {
         on_election_timeout(ec);
     });
 }
+
 
 void raft::Node::on_heartbeat_timeout(const boost::system::error_code &ec) {
     if (!ec) {
@@ -63,6 +65,24 @@ void raft::Node::reset_heartbeat_timer() {
 
 void raft::Node::shut_down_heartbeat_timer() {
     m_heartbeat_timer.cancel();
+}
+
+auto raft::Node::on_lease_timeout(const boost::system::error_code &ec) {
+    if (!ec) {
+        m_event_queue.push(LeaseTimeoutEvent{});
+    } else if (ec != boost::asio::error::operation_aborted) {
+        m_logger->error("Lease timeout error: {}", ec.message());
+    }
+}
+
+void raft::Node::reset_lease_timer() {
+    m_lease_timer.set(m_timer_settings.lease_timer_ms, [this](const boost::system::error_code &ec) {
+        on_lease_timeout(ec);
+    });
+}
+
+void raft::Node::shut_down_lease_timer() {
+    m_lease_timer.cancel();
 }
 
 void raft::Node::log_current_state() const {
@@ -101,8 +121,22 @@ void raft::Node::become_follower(unsigned int term) {
     // Reset election timer and shut down heartbeat timer when becoming a follower.
     reset_election_timer();
     shut_down_heartbeat_timer();
+    shut_down_lease_timer();
     m_state.set_current_term(term);
     m_state.set_vote_for_no_one();
+    log_current_state();
+    clear_pending_requests();
+}
+
+void raft::Node::become_candidate() {
+    m_server_state = ServerState::CANDIDATE;
+
+    m_leader_id = -1;
+    m_state.increment_term();
+    shut_down_heartbeat_timer();
+    shut_down_lease_timer();
+    m_state.set_voted_for(static_cast<int>(m_id));
+    reset_election_timer();
     log_current_state();
     clear_pending_requests();
 }
@@ -114,6 +148,7 @@ void raft::Node::become_leader() {
     m_leader_id = static_cast<int>(m_id);
     shut_down_election_timer();
     reset_heartbeat_timer();
+    reset_lease_timer();
     m_state.set_vote_for_no_one();
     log_current_state();
 }
@@ -385,7 +420,7 @@ bool raft::Node::is_log_more_up_to_date(unsigned int last_log_index, unsigned in
     return false;
 }
 
-void raft::Node::append_entries(unsigned int id) {
+void raft::Node::append_entries(unsigned int id, unsigned int lease_id) {
     std::string &address = m_cluster[id].address;
     AppendEntriesRPC append_entries_rpc;
     unsigned int last_index = m_state.get_last_log_index();
@@ -400,7 +435,7 @@ void raft::Node::append_entries(unsigned int id) {
     append_entries_rpc.commit_index = m_commit_index;
 
     m_client->append_entries(address, append_entries_rpc,
-                             [this, address, id, last_index](const AppendEntriesResponse &response) {
+                             [this, address, id, last_index, lease_id](const AppendEntriesResponse &response) {
                                  if (response.error) {
                                      m_logger->error("AppendEntries failed for address {}", address);
                                      return;
@@ -410,6 +445,7 @@ void raft::Node::append_entries(unsigned int id) {
                                  event.success = response.success;
                                  event.id = id;
                                  event.last_index_added = last_index;
+                                 event.lease_id = lease_id;
                                  m_event_queue.push(event);
                              });
 }
@@ -496,132 +532,164 @@ void raft::Node::clear_pending_requests() {
     m_pending_requests.clear();
 }
 
+void advance_lease_id(unsigned int &lease_id) {
+    constexpr unsigned int MAX_LEASE_ID = 1000;
+    lease_id = std::min(MAX_LEASE_ID, lease_id + 1);
+}
+
 void raft::Node::run_leader_loop() {
     initialize_match_index();
     initialize_next_index();
     bool should_exit = false;
 
+    unsigned int lease_id = 1;
+    bool valid_lease = true;
+    // specify one to indicate our selves
+    unsigned int current_lease_succesful_entries = 1;
+    unsigned int quorum = calculate_quorum();
+
     while (m_server_state == ServerState::LEADER) {
         Event event = m_event_queue.pop();
-        std::visit([this, &should_exit](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
-                m_logger->warn("Election timeout received in Leader state");
-            } else if constexpr (std::is_same_v<T, QuitEvent>) {
-                m_logger->debug("Quit signal received; stopping node");
-                stop();
-                should_exit = true;
-            } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
-                m_logger->debug("Heartbeat timeout received; sending AppendEntries to followers");
-                for (auto &[id, _]: m_cluster) {
-                    if (id == m_id) continue;
-                    append_entries(id);
-                }
-                reset_heartbeat_timer();
-            } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
-                m_logger->debug("Received AppendEntries request from leader: {}", arg.leader_id);
-                if (arg.term < m_state.get_current_term()) {
+        std::visit(
+            [this, &should_exit, &valid_lease, &lease_id, &current_lease_succesful_entries, &quorum](auto &&arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, ElectionTimeoutEvent>) {
+                    m_logger->warn("Election timeout received in Leader state");
+                } else if constexpr (std::is_same_v<T, QuitEvent>) {
+                    m_logger->debug("Quit signal received; stopping node");
+                    stop();
+                    should_exit = true;
+                } else if constexpr (std::is_same_v<T, HeartBeatEvent>) {
+                    m_logger->debug("Heartbeat timeout received; sending AppendEntries to followers");
+                    advance_lease_id(lease_id);
+
+                    for (auto &[id, _]: m_cluster) {
+                        if (id == m_id) continue;
+                        append_entries(id, lease_id);
+                    }
+                    current_lease_succesful_entries = 1;
+
+                    reset_heartbeat_timer();
+                } else if constexpr (std::is_same_v<T, AppendEntriesEvent>) {
+                    m_logger->debug("Received AppendEntries request from leader: {}", arg.leader_id);
+                    if (arg.term < m_state.get_current_term()) {
+                        AppendEntriesResponse response{};
+                        response.term = m_state.get_current_term();
+                        response.success = false;
+                        arg.callback(response);
+                        m_logger->debug(
+                            "Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
+                            arg.leader_id, arg.term, m_state.get_current_term());
+                        return;
+                    }
+
+                    // if the append entries term is higher, demote to follower and accept the new leader
+                    if (arg.term > m_state.get_current_term()) {
+                        m_logger->debug("Accepting AppendEntries request and recognizing new leader");
+                        become_follower(arg.term);
+                        AppendEntriesResponse response{};
+                        response.term = m_state.get_current_term();
+                        response.success = true;
+                        arg.callback(response);
+                        return;
+                    }
+                    // This is the case where the term is equal; serious issue in the implementation.
+                    m_logger->critical("Two leaders detected with the same term; denying AppendEntries request");
                     AppendEntriesResponse response{};
                     response.term = m_state.get_current_term();
                     response.success = false;
                     arg.callback(response);
-                    m_logger->debug(
-                        "Denying AppendEntries request from {}: leader term ({}) is less than our term ({})",
-                        arg.leader_id, arg.term, m_state.get_current_term());
-                    return;
-                }
-
-                // if the append entries term is higher, demote to follower and accept the new leader
-                if (arg.term > m_state.get_current_term()) {
-                    m_logger->debug("Accepting AppendEntries request and recognizing new leader");
-                    become_follower(arg.term);
-                    AppendEntriesResponse response{};
-                    response.term = m_state.get_current_term();
-                    response.success = true;
-                    arg.callback(response);
-                    return;
-                }
-                // This is the case where the term is equal; serious issue in the implementation.
-                m_logger->critical("Two leaders detected with the same term; denying AppendEntries request");
-                AppendEntriesResponse response{};
-                response.term = m_state.get_current_term();
-                response.success = false;
-                arg.callback(response);
-            } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
-                m_logger->debug("Received AppendEntriesResponse from: {}", arg.id);
-                if (arg.term > m_state.get_current_term()) {
-                    become_follower(arg.term);
-                    return;
-                }
-
-                if (!arg.success) {
-                    m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
-                } else {
-                    if (m_match_index[arg.id] != arg.last_index_added) {
-                        m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id,
-                                        m_next_index[arg.id] - 1,
-                                        arg.last_index_added);
-                        m_match_index[arg.id] = arg.last_index_added;
-                        m_next_index[arg.id] = arg.last_index_added + 1;
-                        calculate_new_commit_index();
+                } else if constexpr (std::is_same_v<T, AppendEntriesResponseEvent>) {
+                    m_logger->debug("Received AppendEntriesResponse from: {}", arg.id);
+                    if (arg.term > m_state.get_current_term()) {
+                        become_follower(arg.term);
+                        return;
                     }
-                }
-            } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
-                m_logger->warn("Received RequestVoteResponse in Leader state");
-                if (arg.term > m_state.get_current_term()) {
-                    become_follower(arg.term);
-                }
-            } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
-                m_logger->warn("Received RequestVote from candidate: {}", arg.candidate_id);
-                if (arg.term <= m_state.get_current_term()) {
-                    RequestVoteResponse response{};
-                    response.vote_granted = false;
-                    response.term = m_state.get_current_term();
-                    arg.callback(response);
-                    m_logger->warn(
-                        "Denying vote to candidate {} because candidate term ({}) is less than our term ({})",
-                        arg.candidate_id, arg.term, m_state.get_current_term());
-                    return;
-                }
-                if (arg.term > m_state.get_current_term()) {
-                    become_follower(arg.term);
-                    RequestVoteResponse response{};
-                    response.vote_granted = false;
-                    response.term = m_state.get_current_term();
-                    if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
-                        response.vote_granted = true;
-                        m_state.set_voted_for(arg.candidate_id);
-                        m_logger->debug(
-                            "Granting vote to candidate {} and stepping down, since candidate has greater term",
-                            arg.candidate_id);
+
+                    if (arg.lease_id == lease_id) {
+                        current_lease_succesful_entries++;
+                        if (current_lease_succesful_entries >= quorum) {
+                            m_logger->debug("Lease successfully renewed");
+                            reset_lease_timer();
+                            valid_lease = true;
+                        }
+                    }
+
+                    if (!arg.success) {
+                        m_next_index[arg.id] = std::max(1u, m_next_index[arg.id] - 1);
                     } else {
-                        m_logger->debug(
-                            "Denying vote to candidate {}: candidate's term is greater but log is not up-to-date",
-                            arg.candidate_id);
+                        if (m_match_index[arg.id] != arg.last_index_added) {
+                            m_logger->debug("{} Successfully replicated logs from index {} to {}", arg.id,
+                                            m_next_index[arg.id] - 1,
+                                            arg.last_index_added);
+                            m_match_index[arg.id] = arg.last_index_added;
+                            m_next_index[arg.id] = arg.last_index_added + 1;
+                            calculate_new_commit_index();
+                        }
                     }
-                    arg.callback(response);
-                }
-            } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
-                if (m_state.append_log(arg.command) != SUCCESS) {
-                    m_logger->warn("Failed to take clients request and append log");
-                    ClientRequestResponse response{};
-                    response.success = false;
-                    response.redirect = false;
-                    response.leader_id = m_leader_id;
-                    arg.callback(response);
-                    return;
-                }
+                } else if constexpr (std::is_same_v<T, RequestVoteResponseEvent>) {
+                    m_logger->warn("Received RequestVoteResponse in Leader state");
+                    if (arg.term > m_state.get_current_term()) {
+                        become_follower(arg.term);
+                    }
+                } else if constexpr (std::is_same_v<T, RequestVoteEvent>) {
+                    m_logger->warn("Received RequestVote from candidate: {}", arg.candidate_id);
+                    if (arg.term <= m_state.get_current_term()) {
+                        RequestVoteResponse response{};
+                        response.vote_granted = false;
+                        response.term = m_state.get_current_term();
+                        arg.callback(response);
+                        m_logger->warn(
+                            "Denying vote to candidate {} because candidate term ({}) is less than our term ({})",
+                            arg.candidate_id, arg.term, m_state.get_current_term());
+                        return;
+                    }
+                    if (arg.term > m_state.get_current_term()) {
+                        become_follower(arg.term);
+                        RequestVoteResponse response{};
+                        response.vote_granted = false;
+                        response.term = m_state.get_current_term();
+                        if (is_log_more_up_to_date(arg.last_log_index, arg.last_log_term)) {
+                            response.vote_granted = true;
+                            m_state.set_voted_for(arg.candidate_id);
+                            m_logger->debug(
+                                "Granting vote to candidate {} and stepping down, since candidate has greater term",
+                                arg.candidate_id);
+                        } else {
+                            m_logger->debug(
+                                "Denying vote to candidate {}: candidate's term is greater but log is not up-to-date",
+                                arg.candidate_id);
+                        }
+                        arg.callback(response);
+                    }
+                } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                    if (m_state.append_log(arg.command) != SUCCESS) {
+                        m_logger->warn("Failed to take clients request and append log");
+                        ClientRequestResponse response{};
+                        response.success = false;
+                        response.redirect = false;
+                        response.leader_id = m_leader_id;
+                        arg.callback(response);
+                        return;
+                    }
 
-                // this will cause an append entry request to
-                // each of the followers
-                m_event_queue.push(HeartBeatEvent{});
+                    // this will cause an append entry request to
+                    // each of the followers
+                    m_event_queue.push(HeartBeatEvent{});
 
-                PendingRequest request{};
-                request.waiting_commit_index = m_state.get_last_log_index();
-                request.callback = std::move(arg.callback);
-                m_pending_requests.push_back(request);
-            }
-        }, event);
+                    PendingRequest request{};
+                    request.waiting_commit_index = m_state.get_last_log_index();
+                    request.callback = std::move(arg.callback);
+                    m_pending_requests.push_back(request);
+                } else if constexpr (std::is_same_v<T, LeaseTimeoutEvent>) {
+                    m_logger->debug("Failed to get a successful append entries from majority thus lease is not valid");
+                    valid_lease = false;
+
+                    // triggers the acquisition of new
+                    // lease
+                    m_event_queue.push(HeartBeatEvent{});
+                }
+            } , event);
 
         if (should_exit) {
             return;
@@ -686,12 +754,3 @@ std::string raft::server_state_to_str(ServerState state) {
     }
 }
 
-void raft::Node::become_candidate() {
-    m_server_state = ServerState::CANDIDATE;
-
-    m_leader_id = -1;
-    m_state.increment_term();
-    m_state.set_voted_for(static_cast<int>(m_id));
-    reset_election_timer();
-    log_current_state();
-}
