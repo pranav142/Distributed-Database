@@ -15,6 +15,11 @@
 #include "logging.h"
 
 namespace loadbalancer {
+    struct LBResponse {
+        bool success;
+        std::string data;
+    };
+
     class LoadBalancer {
     public:
         explicit LoadBalancer(utils::Clusters clusters,
@@ -28,7 +33,7 @@ namespace loadbalancer {
 
         ~LoadBalancer() = default;
 
-        bool process_request(const std::string &serialized_command);
+        loadbalancer::LBResponse process_request(const std::string &serialized_command);
 
     private:
         static std::size_t hasher(const std::string &s);

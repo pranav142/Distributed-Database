@@ -38,14 +38,18 @@ db::Response db::DB::query_state(const Command &command) {
     std::optional<std::string> value = get_value(key);
 
     if (!value.has_value()) {
-        response.success = false;
-        response.data = "Key " + key + " not found";
+        response.success = true;
+        response.data = "null";
         return response;
     }
 
     response.success = true;
     response.data = value.value();
     return response;
+}
+
+bool db::DB::is_modifying_command(const Command &command) {
+    return command.type == CommandType::SET || command.type == CommandType::DELETE;
 }
 
 std::optional<std::string> db::DB::get_value(const std::string &key) {

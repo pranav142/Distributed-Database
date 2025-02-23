@@ -226,15 +226,16 @@
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/db_command_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/db_command_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/db_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/db_tests.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/command.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/db/command.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/command.h" beforeDir="false" afterPath="$PROJECT_DIR$/db/command.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/db.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/db.h" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/load_balancer/lb.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/load_balancer/lb.h" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/raft.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/raft.proto" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/FSM.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/FSM.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/client.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/client.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/raft/gRPC_server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/gRPC_server.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -262,60 +263,6 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
@@ -1704,6 +1651,8 @@
       <workItem from="1739925665181" duration="14304000" />
       <workItem from="1740006632095" duration="7649000" />
       <workItem from="1740119372106" duration="4111000" />
+      <workItem from="1740202628614" duration="3145000" />
+      <workItem from="1740286276197" duration="2464000" />
     </task>
     <servers />
   </component>

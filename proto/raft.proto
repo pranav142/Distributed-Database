@@ -34,9 +34,9 @@ message ClientRequest {
 
 message ClientResponse {
   bool success = 1;
-  // used for rerouting request to leader
   bool redirect = 2;
   uint32 leader_id = 3;
+  string data = 4; // Optional response data.
 }
 
 service RaftService {

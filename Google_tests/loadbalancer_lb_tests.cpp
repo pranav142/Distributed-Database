@@ -9,17 +9,29 @@
 #include "cluster.h"
 #include "gRPC_client.h"
 #include "node.h"
+#include "db.h"
 
-
-class MockFSM final : public raft::FSM {
+class MockFSM_lb final : public raft::FSM {
 public:
     raft::FSMResponse query_state(const std::string &serialized_command) override {
-        return raft::FSMResponse{true, ""};
+        auto command = db::deserialize_command(serialized_command);
+        auto response = db->query_state(command.value());
+        return raft::FSMResponse{response.success, response.data};
     }
 
     raft::FSMResponse apply_command(const std::string &serialized_command) override {
-        return raft::FSMResponse{true, ""};
+        auto command = db::deserialize_command(serialized_command);
+        auto response = db->apply_command(command.value());
+        return raft::FSMResponse{response.success, response.data};
     }
+
+    bool is_modifying_command(const std::string &serialized_command) override {
+        auto command = db::deserialize_command(serialized_command);
+        return db->is_modifying_command(command.value());
+    }
+
+private:
+    std::unique_ptr<db::DB> db = std::make_unique<db::DB>();
 };
 
 std::vector<std::unique_ptr<raft::Node> > create_nodes(const utils::ClusterMap &cluster_map) {
@@ -27,7 +39,7 @@ std::vector<std::unique_ptr<raft::Node> > create_nodes(const utils::ClusterMap &
 
     for (auto &[id, node_info]: cluster_map) {
         auto client = std::make_unique<raft::gRPCClient>();
-        auto fsm = std::make_shared<MockFSM>();
+        auto fsm = std::make_shared<MockFSM_lb>();
         auto node = std::make_unique<raft::Node>(id, cluster_map, std::move(client), fsm);
         nodes.push_back(std::move(node));
     }
@@ -85,6 +97,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
     run_cluster(cluster_3);
 
     std::thread request_thread([&]() {
+        // correctly sets the values for keys
         std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MAX_MS * 10));
         for (int i = 0; i < 100; i++) {
             db::Command cmd;
@@ -93,13 +106,59 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
             cmd.type = db::CommandType::SET;
 
             std::string serialized_command = db::serialize_command(cmd);
-            bool success = lb.process_request(serialized_command);
-            GTEST_ASSERT_TRUE(success);
+            loadbalancer::LBResponse response = lb.process_request(serialized_command);
+            GTEST_ASSERT_TRUE(response.success);
         }
-    });
 
-    std::thread stop_thread([&]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(raft::ELECTION_TIMER_MAX_MS * 20));
+        // correctly handles fetching keys
+        // that have been set
+        for (int i = 0; i < 100; i++) {
+            db::Command cmd;
+            cmd.key = "key_" + std::to_string(i);
+            cmd.type = db::CommandType::GET;
+
+            std::string serialized_command = db::serialize_command(cmd);
+            loadbalancer::LBResponse response = lb.process_request(serialized_command);
+            GTEST_ASSERT_TRUE(response.success);
+            GTEST_ASSERT_TRUE(response.data == "value_" + std::to_string(i));
+        }
+
+        // correctly handles fetching keys
+        // that have not been set
+        for (int i = 100; i < 150; i++) {
+             db::Command cmd;
+            cmd.key = "key_" + std::to_string(i);
+            cmd.type = db::CommandType::GET;
+
+            std::string serialized_command = db::serialize_command(cmd);
+            loadbalancer::LBResponse response = lb.process_request(serialized_command);
+            GTEST_ASSERT_TRUE(response.success);
+            GTEST_ASSERT_TRUE(response.data == "null");
+        }
+
+        // deletes keys
+        for (int i = 0; i < 100; i++) {
+            db::Command cmd;
+            cmd.key = "key_" + std::to_string(i);
+            cmd.type = db::CommandType::DELETE;
+
+            std::string serialized_command = db::serialize_command(cmd);
+            loadbalancer::LBResponse response = lb.process_request(serialized_command);
+            GTEST_ASSERT_TRUE(response.success);
+        }
+
+        // ensures keys are deleted
+        for (int i = 0; i < 100; i++) {
+            db::Command cmd;
+            cmd.key = "key_" + std::to_string(i);
+            cmd.type = db::CommandType::GET;
+
+            std::string serialized_command = db::serialize_command(cmd);
+            loadbalancer::LBResponse response = lb.process_request(serialized_command);
+            GTEST_ASSERT_TRUE(response.success);
+            GTEST_ASSERT_TRUE(response.data == "null");
+        }
+
         std::array clusters_{std::ref(cluster_1), std::ref(cluster_2), std::ref(cluster_3)};
         for (auto &cluster: clusters_) {
             for (auto &node: cluster.get()) {
@@ -108,8 +167,8 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
         }
     });
 
+
     request_thread.join();
-    stop_thread.join();
     for (auto &t: node_threads) {
         if (t.joinable()) {
             t.join();

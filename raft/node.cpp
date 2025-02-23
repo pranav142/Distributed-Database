@@ -668,6 +668,37 @@ void raft::Node::run_leader_loop() {
                         arg.callback(response);
                     }
                 } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
+                    if (!m_fsm->is_modifying_command(arg.command)) {
+                        ClientRequestResponse response{};
+                        if (!valid_lease) {
+                            m_logger->debug("Leader does not have a valid lease thus could not process read request");
+                            response.success = false;
+                            response.leader_id = m_leader_id;
+                            response.redirect = false;
+                            response.data = "Could not handle read request due to invalid lease";
+                            arg.callback(response);
+                            return;
+                        }
+
+                        FSMResponse fsm_response = m_fsm->query_state(arg.command);
+                        if (!fsm_response.success) {
+                            m_logger->debug("Could not query the state of FSM");
+                            response.success = false;
+                            response.leader_id = m_leader_id;
+                            response.redirect = false;
+                            response.data = fsm_response.data;
+                            arg.callback(response);
+                            return;
+                        }
+
+                        response.success = true;
+                        response.leader_id = m_leader_id;
+                        response.redirect = false;
+                        response.data = fsm_response.data;
+                        arg.callback(response);
+                        return;
+                    }
+
                     if (m_state.append_log(arg.command) != SUCCESS) {
                         m_logger->warn("Failed to take clients request and append log");
                         ClientRequestResponse response{};

@@ -57,6 +57,10 @@ public:
         }
     }
 
+    bool is_modifying_command(const std::string &serialized_command) override {
+        return true;
+    };
+
 private:
     std::vector<std::string> m_commands;
 };
@@ -218,7 +222,7 @@ TEST(ElectionTest, NodeLogReplicationTest) {
         node_1.get_current_term() == node_3.get_current_term(
         ));
 
-    fsm1->dump();
+    // fsm1->dump();
 }
 
 // This test is for handling the case

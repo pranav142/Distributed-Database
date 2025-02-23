@@ -46,6 +46,7 @@ namespace raft {
         bool success;
         bool redirect;
         unsigned int leader_id;
+        std::string data;
     };
 
     // Client Interface

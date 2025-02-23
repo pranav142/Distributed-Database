@@ -33,6 +33,8 @@ namespace db {
         // not modify the state of the DB
         Response query_state(const Command &command);
 
+        static bool is_modifying_command(const Command &command);
+
         std::optional<std::string> get_value(const std::string &key);
 
     private:
