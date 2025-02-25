@@ -48,6 +48,17 @@ std::optional<std::string> db::DB::get_value(const std::string &key) {
     return std::nullopt;
 }
 
+db::KeyRangeResponse db::DB::get_key_range(std::size_t lower_hash, std::size_t upper_hash) {
+    KeyRangeResponse response{};
+    for (auto& [hash, key] : m_hash_to_key_map) {
+        if (hash >= lower_hash && hash <= upper_hash) {
+            response.keys.push_back(key);
+        }
+    }
+    response.success = true;
+    return response;
+}
+
 db::Response db::DB::update_db_state(const Command &command) {
     std::lock_guard lock(m_mtx);
 
@@ -71,7 +82,7 @@ db::Response db::DB::update_db_state(const Command &command) {
 }
 
 void db::DB::update_key_hash_map(const Command &command) {
-    std::size_t hash = utils::hasher(command.key);
+    std::size_t hash = m_hasher(command.key);
     if (command.type == CommandType::SET) {
         m_hash_to_key_map[hash] = command.key;
     }

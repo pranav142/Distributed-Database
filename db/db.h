@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <string>
 #include <mutex>
+#include <utility>
 
 #include "command.h"
 #include "consistent_hashing.h"
@@ -21,15 +22,21 @@ namespace db {
         std::string data;
     };
 
+    struct KeyRangeResponse {
+        bool success;
+        std::vector<std::string> keys;
+    };
+
     class DB {
     public:
-        DB() = default;
+        explicit DB(std::function<std::size_t(const std::string&)> hasher = utils::hasher) : m_hasher(std::move(hasher)) {
+
+        };
 
         ~DB() = default;
 
         // This is for commands that modify
         // the state of the DB
-
         Response apply_command(const Command &command);
 
         // This is for commands that do
@@ -39,6 +46,8 @@ namespace db {
         static bool is_modifying_command(const Command &command);
 
         std::optional<std::string> get_value(const std::string &key);
+
+        KeyRangeResponse get_key_range(std::size_t lower_hash, std::size_t upper_hash);
 
     private:
         // TODO: rename to be clearer
@@ -50,6 +59,7 @@ namespace db {
         std::mutex m_mtx;
         std::unordered_map<std::string, std::string> m_db;
         std::unordered_map<std::size_t, std::string> m_hash_to_key_map;
+        std::function<std::size_t(const std::string&)> m_hasher;
     };
 };
 
