@@ -43,19 +43,12 @@ loadbalancer::LBResponse loadbalancer::LoadBalancer::process_request(const std::
             return lb_response;
         }
         m_logger->warn("Failed to send request: {} to leader trying again", serialized_command);
-        // wait till we send another request so
-        // the raft cluster can converge
         std::this_thread::sleep_for(std::chrono::milliseconds(NEXT_ATTEMPT_DELAY_MS));
     }
 
     lb_response.success = false;
     lb_response.data = response.data();
     return lb_response;
-}
-
-std::size_t loadbalancer::LoadBalancer::hasher(const std::string &s) {
-    std::hash<std::string> hash;
-    return hash(s);
 }
 
 void loadbalancer::LoadBalancer::initialize_clusters() {
@@ -111,7 +104,7 @@ bool loadbalancer::LoadBalancer::send_request_to_leader(const std::string &shard
     return true;
 }
 
-
+// TODO: Move to a seperate client class
 bool loadbalancer::command_request(const std::string &address, const raft_gRPC::ClientRequest &request,
                                    raft_gRPC::ClientResponse *response) {
     grpc::ClientContext context;

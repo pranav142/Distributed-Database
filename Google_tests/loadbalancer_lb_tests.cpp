@@ -30,6 +30,7 @@ public:
         return db->is_modifying_command(command.value());
     }
 
+
 private:
     std::unique_ptr<db::DB> db = std::make_unique<db::DB>();
 };

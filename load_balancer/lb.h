@@ -12,7 +12,6 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "consistent_hashing.h"
-#include "logging.h"
 
 namespace loadbalancer {
     struct LBResponse {
@@ -27,7 +26,7 @@ namespace loadbalancer {
                               unsigned int replicas) : m_clusters(std::move(clusters)),
                                                        m_logger(spdlog::stdout_color_mt("load balancer")),
                                                        m_get_key(std::move(get_key)),
-                                                       m_consistent_hash(replicas, hasher) {
+                                                       m_consistent_hash(replicas, utils::hasher) {
             initialize_clusters();
         }
 
@@ -36,8 +35,6 @@ namespace loadbalancer {
         loadbalancer::LBResponse process_request(const std::string &serialized_command);
 
     private:
-        static std::size_t hasher(const std::string &s);
-
         void initialize_clusters();
 
         void update_leader_cache(const std::string &shard, const std::string &leader_address);

@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
+SET(CMAKE_CXX_COMPILER clang)
 project(db LANGUAGES CXX)
 
 find_package(TBB REQUIRED)
@@ -116,6 +117,12 @@ set(DB_FILES
 add_library(db
         ${DB_FILES}
 )
+
+target_include_directories(db PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
+)
+
+target_link_libraries(db PRIVATE utils)
 
 add_executable(main
         main.cpp

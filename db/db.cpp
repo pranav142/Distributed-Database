@@ -5,24 +5,11 @@
 #include "db.h"
 
 db::Response db::DB::apply_command(const Command &command) {
-    std::lock_guard lock(m_mtx);
-
-    Response response{};
-
-    if (command.type == CommandType::SET) {
-        m_db[command.key] = command.value;
-        response.success = true;
-        return response;
+    Response response = update_db_state(command);
+    if (response.success) {
+        update_key_hash_map(command);
     }
 
-    if (command.type == CommandType::DELETE) {
-        m_db.erase(command.key);
-        response.success = true;
-        return response;
-    }
-
-    response.success = false;
-    response.data = "Command " + command_type_to_str(command.type) + " not supported for modifying requests";
     return response;
 }
 
@@ -59,4 +46,37 @@ std::optional<std::string> db::DB::get_value(const std::string &key) {
         return m_db[key];
     }
     return std::nullopt;
+}
+
+db::Response db::DB::update_db_state(const Command &command) {
+    std::lock_guard lock(m_mtx);
+
+    Response response{};
+
+    if (command.type == CommandType::SET) {
+        m_db[command.key] = command.value;
+        response.success = true;
+        return response;
+    }
+
+    if (command.type == CommandType::DELETE) {
+        m_db.erase(command.key);
+        response.success = true;
+        return response;
+    }
+
+    response.success = false;
+    response.data = "Command " + command_type_to_str(command.type) + " not supported for modifying requests";
+    return response;
+}
+
+void db::DB::update_key_hash_map(const Command &command) {
+    std::size_t hash = utils::hasher(command.key);
+    if (command.type == CommandType::SET) {
+        m_hash_to_key_map[hash] = command.key;
+    }
+
+    if (command.type == CommandType::DELETE) {
+        m_hash_to_key_map.erase(hash);
+    }
 }

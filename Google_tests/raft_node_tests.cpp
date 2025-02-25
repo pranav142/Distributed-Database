@@ -59,7 +59,8 @@ public:
 
     bool is_modifying_command(const std::string &serialized_command) override {
         return true;
-    };
+    }
+
 
 private:
     std::vector<std::string> m_commands;

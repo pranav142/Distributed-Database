@@ -38,6 +38,11 @@ namespace utils {
         std::unordered_map<std::size_t, std::string> m_hash_to_name;
         std::set<std::size_t> m_ring;
     };
+
+    inline std::size_t hasher(const std::string &s) {
+        std::hash<std::string> hash;
+        return hash(s);
+    }
 }
 
 #endif //CONSISTENT_HASHING_H
