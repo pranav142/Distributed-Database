@@ -10,37 +10,15 @@
 #include "gRPC_client.h"
 #include "node.h"
 #include "db.h"
+#include "Mock_FSM.h"
 
-class MockFSM_lb final : public raft::FSM {
-public:
-    raft::FSMResponse query_state(const std::string &serialized_command) override {
-        auto command = db::deserialize_command(serialized_command);
-        auto response = db->query_state(command.value());
-        return raft::FSMResponse{response.success, response.data};
-    }
-
-    raft::FSMResponse apply_command(const std::string &serialized_command) override {
-        auto command = db::deserialize_command(serialized_command);
-        auto response = db->apply_command(command.value());
-        return raft::FSMResponse{response.success, response.data};
-    }
-
-    bool is_modifying_command(const std::string &serialized_command) override {
-        auto command = db::deserialize_command(serialized_command);
-        return db->is_modifying_command(command.value());
-    }
-
-
-private:
-    std::unique_ptr<db::DB> db = std::make_unique<db::DB>();
-};
 
 std::vector<std::unique_ptr<raft::Node> > create_nodes(const utils::ClusterMap &cluster_map) {
     std::vector<std::unique_ptr<raft::Node> > nodes;
 
     for (auto &[id, node_info]: cluster_map) {
         auto client = std::make_unique<raft::gRPCClient>();
-        auto fsm = std::make_shared<MockFSM_lb>();
+        auto fsm = std::make_shared<MockFSM>();
         auto node = std::make_unique<raft::Node>(id, cluster_map, std::move(client), fsm);
         nodes.push_back(std::move(node));
     }

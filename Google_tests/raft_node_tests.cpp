@@ -10,6 +10,7 @@
 #include "gRPC_client.h"
 #include "logging.h"
 #include "lb.h"
+#include "Mock_FSM.h"
 
 class MockClient final : public raft::Client {
 public:
@@ -38,32 +39,6 @@ public:
         });
         t.detach();
     }
-};
-
-class MockFSM final : public raft::FSM {
-public:
-    raft::FSMResponse apply_command(const std::string &serialized_command) override {
-        m_commands.push_back(serialized_command);
-        return raft::FSMResponse{true, ""};
-    }
-
-    raft::FSMResponse query_state(const std::string &serialized_command) override {
-        return raft::FSMResponse{true, ""};
-    }
-
-    void dump() {
-        for (auto &command: m_commands) {
-            std::cout << command << std::endl;
-        }
-    }
-
-    bool is_modifying_command(const std::string &serialized_command) override {
-        return true;
-    }
-
-
-private:
-    std::vector<std::string> m_commands;
 };
 
 TEST(ElectionTest, CoreElectionLogic) {
@@ -159,7 +134,6 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     raft::Node node_1(0, cluster_map, std::move(client1), fsm1, timer_settings);
     node_1.set_current_term(10);
 
-    // these nodes will timeout exactly at the minimum election time
     timer_settings.election_timer_max_ms = raft::ELECTION_TIMER_MIN_MS;
     timer_settings.election_timer_min_ms = raft::ELECTION_TIMER_MIN_MS;
 
@@ -177,7 +151,12 @@ TEST(ElectionTest, NodeLogReplicationTest) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
         for (int i = 0; i < 10; i++) {
             raft_gRPC::ClientRequest request;
-            request.set_command("x->" + std::to_string(i));
+            db::Command command;
+            command.key = "x";
+            command.type = db::CommandType::SET;
+            command.value = std::to_string(i);
+            db::serialize_command(command);
+            request.set_command(db::serialize_command(command));
 
             raft_gRPC::ClientResponse response;
 

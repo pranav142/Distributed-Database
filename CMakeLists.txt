@@ -151,6 +151,7 @@ add_executable(GTests_run
         Google_tests/db_tests.cpp
         Google_tests/utils_consistent_hashing_tests.cpp
         Google_tests/loadbalancer_lb_tests.cpp
+        Google_tests/Mock_FSM.h
 )
 
 target_link_libraries(GTests_run
