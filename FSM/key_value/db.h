@@ -17,16 +17,15 @@ namespace kv {
     public:
         DB() = default;
 
-        fsm::FSMResponse apply_command(const fsm::SerializedData &serialized_command) override;
+        fsm::FSMResponse apply_command(const util::SerializedData &serialized_command) override;
 
-        fsm::FSMResponse query_state(const fsm::SerializedData &serialized_query) override;
+        fsm::FSMResponse query_state(const util::SerializedData &serialized_query) override;
 
-        std::optional<fsm::RequestType> get_request_type(const fsm::SerializedData &serialized_request) override;
-
+        std::optional<fsm::RequestType> get_request_type(const util::SerializedData &serialized_request) override;
     private:
-        kv::Response process_command(const Request &request);
+        Response process_command(const Request &request);
 
-        kv::Response process_query(const Request &request);
+        Response process_query(const Request &request);
 
         std::optional<std::string> get_value(const std::string &key);
     private:

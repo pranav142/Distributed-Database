@@ -62,6 +62,8 @@ set(UTIL_FILES
         utils/cluster.h
         utils/consistent_hashing.cpp
         utils/consistent_hashing.h
+        utils/serialized_data.cpp
+        utils/serialized_data.h
 )
 
 add_library(utils
@@ -166,11 +168,8 @@ add_executable(GTests_run
         Google_tests/raft_persistent_state_tests.cpp
         Google_tests/raft_event_queue_tests.cpp
         Google_tests/raft_node_tests.cpp
-        Google_tests/db_command_tests.cpp
-        Google_tests/db_tests.cpp
         Google_tests/utils_consistent_hashing_tests.cpp
         Google_tests/loadbalancer_lb_tests.cpp
-        Google_tests/Mock_FSM.h
 )
 
 target_link_libraries(GTests_run

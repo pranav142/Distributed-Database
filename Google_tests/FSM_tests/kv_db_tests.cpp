@@ -29,3 +29,15 @@ TEST(KvDbTests, SetsValueTest) {
     GTEST_ASSERT_TRUE(response->success);
     GTEST_ASSERT_EQ(response->data, "10");
 }
+
+TEST(KvDbTests, ReadsInvalidValueTest) {
+    kv::DB db;
+
+    kv::Request request{
+        .type = kv::RequestType::GET,
+        .key = "key",
+    };
+    fsm::SerializedData serialized_request = kv::serialize_request(request);
+    fsm::FSMResponse fsm_response = db.query_state(serialized_request);
+    GTEST_ASSERT_EQ(fsm_response.error_code, fsm::FSMResponse::ErrorCode::FAILED_TO_PROCESS_REQUEST);
+}
