@@ -21,11 +21,14 @@ namespace kv {
 
         fsm::FSMResponse query_state(const fsm::SerializedData &serialized_query) override;
 
-        fsm::RequestType get_request_type(const fsm::SerializedData &serialized_request) override;
+        std::optional<fsm::RequestType> get_request_type(const fsm::SerializedData &serialized_request) override;
 
     private:
         kv::Response process_command(const Request &request);
 
+        kv::Response process_query(const Request &request);
+
+        std::optional<std::string> get_value(const std::string &key);
     private:
         std::mutex m_mtx;
 

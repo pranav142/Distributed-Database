@@ -41,7 +41,7 @@ namespace fsm {
         // modify the FSM state
         virtual FSMResponse query_state(const SerializedData& serialized_query) = 0;
 
-        virtual RequestType get_request_type(const SerializedData& serialized_request) = 0;
+        virtual std::optional<RequestType> get_request_type(const SerializedData& serialized_request) = 0;
 
         // TODO add functionality to turn requests into LOGs that can be appended
         // TODO add functionality to apply logs

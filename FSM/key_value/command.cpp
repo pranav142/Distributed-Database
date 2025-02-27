@@ -56,8 +56,8 @@ std::optional<kv::Response> kv::deserialize_response(const fsm::SerializedData &
     }
 
     return Response{
+        .success = j.at("success"),
         .data = j.at("data"),
-        .success = j.at("success")
     };
 }
 

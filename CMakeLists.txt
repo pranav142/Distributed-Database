@@ -146,6 +146,7 @@ enable_testing()
 
 add_executable(GTest_FSM_run
         Google_tests/FSM_tests/kv_command_tests.cpp
+        Google_tests/FSM_tests/kv_db_tests.cpp
 )
 
 target_link_libraries(GTest_FSM_run
