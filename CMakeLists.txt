@@ -51,7 +51,6 @@ set(RAFT_FILES
         raft/gRPC_server.cpp
         raft/gRPC_server.h
         raft/client.cpp
-        raft/FSM.h
 )
 
 set(UTIL_FILES
@@ -86,6 +85,7 @@ target_include_directories(raft
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
 )
 
 target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils)
@@ -107,22 +107,25 @@ target_include_directories(lb
 
 target_link_libraries(lb PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils TBB::tbb)
 
-set(DB_FILES
-        db/db.cpp
-        db/db.h
-        db/command.cpp
-        db/command.h
+set(FSM_FILES
+        FSM/key_value/db.cpp
+        FSM/key_value/db.h
+        FSM/key_value/command.cpp
+        FSM/key_value/command.h
+        FSM/FSM.h
 )
 
-add_library(db
-        ${DB_FILES}
+add_library(fsm
+        ${FSM_FILES}
 )
 
-target_include_directories(db PRIVATE
+target_include_directories(fsm PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/json/single_include
 )
 
-target_link_libraries(db PRIVATE utils)
+target_link_libraries(fsm PUBLIC utils)
 
 add_executable(main
         main.cpp
@@ -141,6 +144,21 @@ target_include_directories(main
 
 enable_testing()
 
+add_executable(GTest_FSM_run
+        Google_tests/FSM_tests/kv_command_tests.cpp
+)
+
+target_link_libraries(GTest_FSM_run
+        PRIVATE
+        fsm
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_FSM_run
+        PRIVATE
+        FSM
+)
+
 add_executable(GTests_run
         Google_tests/raft_logs_tests.cpp
         Google_tests/raft_utils_tests.cpp
@@ -158,7 +176,7 @@ target_link_libraries(GTests_run
         PRIVATE
         raft
         lb
-        db
+        fsm
         utils
         GTest::gtest_main
 )
@@ -170,9 +188,9 @@ target_include_directories(GTests_run
         raft
         load_balancer
         utils
-        db
+        FSM
         TBB::tbb
 )
 
 include(GoogleTest)
-gtest_discover_tests(GTests_run)
+gtest_discover_tests(GTests_run GTest_FSM_run)

@@ -5,11 +5,11 @@
 #include <gtest/gtest.h>
 #include "logging.h"
 #include "lb.h"
-#include "command.h"
+#include "key_value/command.h"
 #include "cluster.h"
 #include "gRPC_client.h"
 #include "node.h"
-#include "db.h"
+#include "key_value/db.h"
 #include "Mock_FSM.h"
 
 

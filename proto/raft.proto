@@ -39,6 +39,18 @@ message ClientResponse {
   string data = 4; // Optional response data.
 }
 
+message GetClientKeyRange {
+  uint64 lower_hash = 1;
+  uint64 upper_hash = 2;
+}
+
+message ClientKeyRangeResponse {
+  bool success = 1;
+  // a series of commands
+  // that show the state of the keys
+  string data = 2;
+}
+
 service RaftService {
   rpc HandleVoteRequest(RequestVote) returns (RequestVoteResponse);
   rpc HandleAppendEntries(AppendEntries) returns (AppendEntriesResponse);

@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include "command.h"
+#include "key_value/command.h"
 
 TEST(CommandSerializationTests, GenericSetCommand) {
     db::Command command{

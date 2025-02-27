@@ -6,7 +6,7 @@
 #define MOCK_FSM_H
 
 #include "FSM.h"
-#include "db.h"
+#include "key_value/db.h"
 #include <memory>
 
 class MockFSM final : public raft::FSM {

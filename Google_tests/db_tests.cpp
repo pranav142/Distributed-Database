@@ -4,7 +4,7 @@
 
 #include <absl/strings/str_format.h>
 #include <gtest/gtest.h>
-#include "db.h"
+#include "key_value/db.h"
 
 TEST(DbTests, SetValueTest) {
     db::DB db;
