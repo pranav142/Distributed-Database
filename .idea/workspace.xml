@@ -84,7 +84,6 @@
       <config projectName="db" targetName="ContinuousTest" />
       <config projectName="db" targetName="city" />
       <config projectName="db" targetName="ContinuousConfigure" />
-      <config projectName="db" targetName="GTests_run" />
       <config projectName="db" targetName="random_internal_randen_hwaes_impl" />
       <config projectName="db" targetName="string_view" />
       <config projectName="db" targetName="NightlyStart" />
@@ -184,6 +183,7 @@
       <config projectName="db" targetName="grpcpp_channelz" />
       <config projectName="db" targetName="ContinuousSubmit" />
       <config projectName="db" targetName="random_test" />
+      <config projectName="db" targetName="GTest_util_run" />
       <config projectName="db" targetName="log_internal_log_sink_set" />
       <config projectName="db" targetName="crc_cord_state" />
       <config projectName="db" targetName="random_internal_seed_material" />
@@ -214,6 +214,7 @@
       <config projectName="db" targetName="adig" />
       <config projectName="db" targetName="NightlyBuild" />
       <config projectName="db" targetName="set_test" />
+      <config projectName="db" targetName="GTest_raft_run" />
       <config projectName="db" targetName="log_severity" />
       <config projectName="db" targetName="random_internal_randen_slow" />
       <config projectName="db" targetName="Nightly" />
@@ -229,23 +230,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/utils/serialized_data.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/serialized_data.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/FSM.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/FSM.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/command.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/command.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/command.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/command.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/db.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/db.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/db.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/db.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/FSM_tests/kv_db_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/FSM_tests/kv_db_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/Mock_FSM.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/db_command_tests.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/db_tests.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/node.h" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_event_queue_tests.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_logs_tests.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_node_tests.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_persistent_state_tests.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/raft_utils_tests.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/utils_consistent_hashing_tests.cpp" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -272,16 +264,7 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Google_tests/loadbalancer_lb_tests.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/raft/node.h" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectApplicationVersion">
@@ -333,12 +316,18 @@
     "Google Test.ElectionTest.SpliBrainTest.executor": "Run",
     "Google Test.ElectionTest.SuccessfulCandidateTransition.executor": "Run",
     "Google Test.EventQueueTests.HandlesThreadSafety.executor": "Run",
+    "Google Test.GTest_raft_run.executor": "Run",
+    "Google Test.GTest_util_run.executor": "Run",
     "Google Test.GTests_run.executor": "Run",
+    "Google Test.GenerateRandomNumber.HandlesValidMinMax.executor": "Run",
     "Google Test.KvDbTests.SetsValueTest.executor": "Run",
     "Google Test.LoadBalancerTests.HandlesRequestRouting.executor": "Run",
     "Google Test.PersistentStateAppendLog.HandlesValidLog.executor": "Run",
     "Google Test.PersistentStateReadLog.GetsEntries.executor": "Run",
+    "Google Test.PersistentStateReadLog.HandlesValidLog.executor": "Run",
+    "Google Test.ReadPersistentStateTest.HandlesValidState.executor": "Run",
     "Google Test.ReplaceLineTest.HandlesValidReplacement.executor": "Run",
+    "Google Test.WritePersistentStateTest.HandlesValidState.executor": "Run",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
@@ -357,43 +346,49 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Google Test.ElectionTest.HandlesOfflineNodesTest">
+  <component name="RunManager" selected="Google Test.GTest_util_run">
     <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="CLION.EXTERNAL.BUILD" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ElectionTest.CoreElectionLogic" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="CoreElectionLogic" TEST_MODE="SUITE_TEST">
+    <configuration name="GTest_raft_run" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ElectionTest.HandlesOfflineNodesTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="HandlesOfflineNodesTest" TEST_MODE="SUITE_TEST">
+    <configuration name="GTest_util_run" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_util_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_util_run" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ElectionTest.NodeLogReplicationTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="NodeLogReplicationTest" TEST_MODE="SUITE_TEST">
+    <configuration name="GenerateRandomNumber.HandlesValidMinMax" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_CLASS="GenerateRandomNumber" TEST_METHOD="HandlesValidMinMax" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ElectionTest.RequestVoteTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_CLASS="ElectionTest" TEST_METHOD="RequestVoteTest" TEST_MODE="SUITE_TEST">
+    <configuration name="PersistentStateAppendLog.HandlesValidLog" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_CLASS="PersistentStateAppendLog" TEST_METHOD="HandlesValidLog" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="GTests_run" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTests_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTests_run" TEST_MODE="SUITE_TEST">
+    <configuration name="PersistentStateReadLog.GetsEntries" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_CLASS="PersistentStateReadLog" TEST_METHOD="GetsEntries" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="KvDbTests.SetsValueTest" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_FSM_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_FSM_run" TEST_CLASS="KvDbTests" TEST_METHOD="SetsValueTest" TEST_MODE="SUITE_TEST">
+    <configuration name="PersistentStateReadLog.HandlesValidLog" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_CLASS="PersistentStateReadLog" TEST_METHOD="HandlesValidLog" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ReplaceLineTest.HandlesValidReplacement" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" temporary="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="db" TARGET_NAME="GTest_raft_run" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="db" RUN_TARGET_NAME="GTest_raft_run" TEST_CLASS="ReplaceLineTest" TEST_METHOD="HandlesValidReplacement" TEST_MODE="SUITE_TEST">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
         <option name="BeforeTestRunTask" enabled="true" />
@@ -1619,20 +1614,21 @@
       <item itemvalue="CMake Application.fsm" />
       <item itemvalue="CMake Application.GTest_FSM_run" />
       <item itemvalue="CTest Application.All CTest" />
-      <item itemvalue="Google Test.GTests_run" />
-      <item itemvalue="Google Test.ElectionTest.HandlesOfflineNodesTest" />
-      <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
-      <item itemvalue="Google Test.ElectionTest.RequestVoteTest" />
-      <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
-      <item itemvalue="Google Test.KvDbTests.SetsValueTest" />
+      <item itemvalue="Google Test.GTest_raft_run" />
+      <item itemvalue="Google Test.GTest_util_run" />
+      <item itemvalue="Google Test.GenerateRandomNumber.HandlesValidMinMax" />
+      <item itemvalue="Google Test.PersistentStateAppendLog.HandlesValidLog" />
+      <item itemvalue="Google Test.PersistentStateReadLog.GetsEntries" />
+      <item itemvalue="Google Test.PersistentStateReadLog.HandlesValidLog" />
+      <item itemvalue="Google Test.ReplaceLineTest.HandlesValidReplacement" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Google Test.ElectionTest.HandlesOfflineNodesTest" />
-        <item itemvalue="Google Test.ElectionTest.NodeLogReplicationTest" />
-        <item itemvalue="Google Test.ElectionTest.RequestVoteTest" />
-        <item itemvalue="Google Test.ElectionTest.CoreElectionLogic" />
-        <item itemvalue="Google Test.KvDbTests.SetsValueTest" />
+        <item itemvalue="Google Test.GenerateRandomNumber.HandlesValidMinMax" />
+        <item itemvalue="Google Test.ReplaceLineTest.HandlesValidReplacement" />
+        <item itemvalue="Google Test.PersistentStateReadLog.GetsEntries" />
+        <item itemvalue="Google Test.PersistentStateReadLog.HandlesValidLog" />
+        <item itemvalue="Google Test.PersistentStateAppendLog.HandlesValidLog" />
       </list>
     </recent_temporary>
   </component>
@@ -1678,7 +1674,7 @@
       <workItem from="1740557996360" duration="1086000" />
       <workItem from="1740631927216" duration="6663000" />
       <workItem from="1740642895008" duration="4015000" />
-      <workItem from="1740690401126" duration="4754000" />
+      <workItem from="1740690401126" duration="6885000" />
     </task>
     <servers />
   </component>

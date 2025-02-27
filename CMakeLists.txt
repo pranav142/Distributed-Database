@@ -90,7 +90,7 @@ target_include_directories(raft
         ${CMAKE_CURRENT_SOURCE_DIR}/FSM
 )
 
-target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils)
+target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils fsm)
 
 set(LB_FILES
         load_balancer/lb.cpp
@@ -159,38 +159,44 @@ target_link_libraries(GTest_FSM_run
 
 target_include_directories(GTest_FSM_run
         PRIVATE
-        FSM
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
 )
 
-add_executable(GTests_run
-        Google_tests/raft_logs_tests.cpp
-        Google_tests/raft_utils_tests.cpp
-        Google_tests/raft_persistent_state_tests.cpp
-        Google_tests/raft_event_queue_tests.cpp
-        Google_tests/raft_node_tests.cpp
-        Google_tests/utils_consistent_hashing_tests.cpp
-        Google_tests/loadbalancer_lb_tests.cpp
+add_executable(GTest_raft_run
+        Google_tests/raft_tests/raft_logs_tests.cpp
+        Google_tests/raft_tests/raft_node_tests.cpp
+        Google_tests/raft_tests/raft_persistent_state_tests.cpp
+        Google_tests/raft_tests/raft_utils_tests.cpp
 )
 
-target_link_libraries(GTests_run
+target_link_libraries(GTest_raft_run
         PRIVATE
         raft
         lb
-        fsm
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_raft_run
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/raft
+        ${CMAKE_CURRENT_SOURCE_DIR}/load_balancer
+)
+
+add_executable(GTest_util_run
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/util_tests/util_consistent_hashing_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/util_tests/util_event_queue_tests.cpp
+)
+
+target_link_libraries(GTest_util_run
+        PRIVATE
         utils
         GTest::gtest_main
 )
 
-target_include_directories(GTests_run
+target_include_directories(GTest_util_run
         PRIVATE
-        # ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
-        # ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
-        raft
-        load_balancer
         utils
-        FSM
-        TBB::tbb
 )
 
 include(GoogleTest)
-gtest_discover_tests(GTests_run GTest_FSM_run)
+gtest_discover_tests(GTest_raft_run GTest_FSM_run GTest_util_run)
