@@ -3,51 +3,38 @@
 //
 
 #include "lb.h"
+#include "gRPC_client.h"
 
-#include <boost/system/error_code.hpp>
-#include <grpcpp/grpcpp.h>
-#include <oneapi/tbb/partitioner.h>
+loadbalancer::LBClientResponse loadbalancer::LoadBalancer::process_request(const LBClientRequest &request) {
+    raft_gRPC::ClientRequest gRPC_request;
+    raft_gRPC::ClientResponse gRPC_response;
+    LBClientResponse lb_response;
 
-#include "../libs/httplib/httplib.h"
-
-loadbalancer::LBResponse loadbalancer::LoadBalancer::process_request(const std::string &serialized_command) {
-    raft_gRPC::ClientRequest request;
-    raft_gRPC::ClientResponse response;
-    LBResponse lb_response;
     constexpr unsigned int MAX_TRIES = 3;
     constexpr unsigned int NEXT_ATTEMPT_DELAY_MS = 100;
 
-    std::optional<std::string> key = m_get_key(serialized_command);
-    if (key == std::nullopt) {
-        m_logger->warn("Could not parse key from command {}", serialized_command);
-        lb_response.success = false;
-        lb_response.data = "Could not parse key from command";
-        return lb_response;
-    }
-
-    std::optional<std::string> cluster_name = m_consistent_hash.get_node(key.value());
+    std::optional<std::string> cluster_name = m_consistent_hash.get_node(request.key);
     if (cluster_name == std::nullopt) {
         m_logger->warn("Could not find a cluster to allocate key");
-        lb_response.success = false;
-        lb_response.data = "Could not find a cluster to allocate key";
+        lb_response.error_code = LBClientResponse::ErrorCode::COULD_NOT_FIND_VALID_CLUSTER;
         return lb_response;
     }
-    m_logger->debug("Sending request: {} to Cluster: {}", serialized_command, cluster_name.value());
+    m_logger->debug("Sending request (key: {}) to Cluster: {}", request.key, cluster_name.value());
 
-    request.set_command(serialized_command);
+    gRPC_request.set_command(util::serialized_data_to_string(request.request));
 
     for (int i = 0; i < MAX_TRIES; i++) {
-        if (send_request_to_leader(cluster_name.value(), request, &response)) {
-            lb_response.success = true;
-            lb_response.data = response.data();
+        if (send_request_to_leader(cluster_name.value(), gRPC_request, &gRPC_response)) {
+            lb_response.error_code = LBClientResponse::ErrorCode::SUCCESS;
+            lb_response.response = util::serialized_data_from_string(gRPC_response.data());
             return lb_response;
         }
-        m_logger->warn("Failed to send request: {} to leader trying again", serialized_command);
+        m_logger->warn("Failed to send request to leader trying again");
         std::this_thread::sleep_for(std::chrono::milliseconds(NEXT_ATTEMPT_DELAY_MS));
     }
 
-    lb_response.success = false;
-    lb_response.data = response.data();
+    lb_response.error_code = LBClientResponse::ErrorCode::INVALID_LEADER;
+    lb_response.response = util::serialized_data_from_string(gRPC_response.data());
     return lb_response;
 }
 
@@ -77,7 +64,7 @@ bool loadbalancer::LoadBalancer::send_request_to_leader(const std::string &shard
 
     if (!leader_address.has_value()) {
         for (const auto &[id, node_info]: cluster_map) {
-            success = command_request(node_info.address, request, response);
+            success = send_request_grpc(node_info.address, request, response);
             if (!success) {
                 continue;
             }
@@ -95,21 +82,11 @@ bool loadbalancer::LoadBalancer::send_request_to_leader(const std::string &shard
         }
     }
 
-    success = command_request(leader_address.value(), request, response);
+    success = send_request_grpc(leader_address.value(), request, response);
     if (!success || !response->success()) {
         m_leader_cache.erase(shard);
         return false;
     }
 
     return true;
-}
-
-// TODO: Move to a seperate client class
-bool loadbalancer::command_request(const std::string &address, const raft_gRPC::ClientRequest &request,
-                                   raft_gRPC::ClientResponse *response) {
-    grpc::ClientContext context;
-    auto channel = grpc::CreateChannel(address, grpc::InsecureChannelCredentials());
-    auto stub = raft_gRPC::RaftService::NewStub(channel);
-    grpc::Status status = stub->HandleClientRequest(&context, request, response);
-    return status.ok();
 }

@@ -95,6 +95,8 @@ target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MING
 set(LB_FILES
         load_balancer/lb.cpp
         load_balancer/lb.h
+        load_balancer/gRPC_client.cpp
+        load_balancer/gRPC_client.h
 )
 
 add_library(lb
@@ -196,6 +198,26 @@ target_link_libraries(GTest_util_run
 target_include_directories(GTest_util_run
         PRIVATE
         utils
+)
+
+add_executable(GTest_lb_run
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/loadbalancer_tests/lb_tests.cpp
+)
+
+target_link_libraries(GTest_lb_run
+        PRIVATE
+        lb
+        fsm
+        raft
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_lb_run
+        PRIVATE
+        load_balancer
+        FSM
+        raft
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 include(GoogleTest)

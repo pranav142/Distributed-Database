@@ -499,9 +499,8 @@ void raft::Node::calculate_new_commit_index() {
 }
 
 void raft::Node::update_commit_index(unsigned int commit_index) {
-    fsm::FSMResponse response;
     // commit index can only increase
-    // do not process indicies less than or
+    // do not process indices less than or
     // equal to ours
     if (m_commit_index >= commit_index) {
         return;
@@ -515,9 +514,10 @@ void raft::Node::update_commit_index(unsigned int commit_index) {
             m_logger->critical("Logs have been corrupted could not read log index: {}", i);
         }
 
-        response = m_fsm->apply_command(util::serialized_data_from_string(log.value().entry));
+        fsm::FSMResponse response = m_fsm->apply_command(util::serialized_data_from_string(log.value().entry));
         if (response.error_code != fsm::FSMResponse::ErrorCode::SUCCESS) {
             m_logger->critical("Failed to apply command {}", log.value().entry);
+
             // stop if unable to apply command TODO: remove later?
             assert(response.error_code == fsm::FSMResponse::ErrorCode::SUCCESS);
         }
