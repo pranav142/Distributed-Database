@@ -12,28 +12,10 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "consistent_hashing.h"
-#include "serialized_data.h"
+#include "event_queue.h"
+#include "event.h"
 
 namespace loadbalancer {
-    struct LBClientRequest {
-        // Key for request routing
-        std::string key;
-        util::SerializedData request;
-    };
-
-    struct LBClientResponse {
-        enum class ErrorCode {
-            SUCCESS,
-            COULD_NOT_FIND_VALID_CLUSTER,
-            INVALID_LEADER,
-        } error_code;
-        util::SerializedData response;
-    };
-
-    struct LBResponse {
-        bool success;
-        std::string data;
-    };
 
     class LoadBalancer {
     public:
@@ -47,7 +29,6 @@ namespace loadbalancer {
         ~LoadBalancer() = default;
 
         LBClientResponse process_request(const LBClientRequest &request);
-
     private:
         void initialize_clusters();
 
@@ -64,10 +45,10 @@ namespace loadbalancer {
         utils::Clusters m_clusters;
         std::shared_ptr<spdlog::logger> m_logger;
 
-        std::function<std::optional<std::string>(const std::string &s)> m_get_key;
         utils::ConsistentHashing m_consistent_hash;
-
         std::unordered_map<std::string, std::string> m_leader_cache;
+
+        utils::EventQueue<HTTPRequestEvent> http_request_queue;
     };
 }
 #endif //LB_H

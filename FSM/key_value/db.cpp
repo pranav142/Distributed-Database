@@ -6,7 +6,7 @@
 
 #include "command.h"
 
-fsm::FSMResponse kv::DB::apply_command(const util::SerializedData &serialized_command) {
+fsm::FSMResponse kv::DB::apply_command(const utils::SerializedData &serialized_command) {
     std::optional<Request> request = deserialize_request(serialized_command);
     if (!request.has_value()) {
         return fsm::FSMResponse{
@@ -28,7 +28,7 @@ fsm::FSMResponse kv::DB::apply_command(const util::SerializedData &serialized_co
     };
 }
 
-fsm::FSMResponse kv::DB::query_state(const util::SerializedData &serialized_query) {
+fsm::FSMResponse kv::DB::query_state(const utils::SerializedData &serialized_query) {
     std::optional<Request> request = deserialize_request(serialized_query);
     if (!request.has_value()) {
         return fsm::FSMResponse{
@@ -50,7 +50,7 @@ fsm::FSMResponse kv::DB::query_state(const util::SerializedData &serialized_quer
     };
 }
 
-std::optional<fsm::RequestType> kv::DB::get_request_type(const util::SerializedData &serialized_request) {
+std::optional<fsm::RequestType> kv::DB::get_request_type(const utils::SerializedData &serialized_request) {
     std::optional<Request> request = deserialize_request(serialized_request);
     if (!request.has_value()) {
         return std::nullopt;

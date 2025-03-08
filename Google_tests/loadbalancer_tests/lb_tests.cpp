@@ -85,7 +85,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
 
 
             loadbalancer::LBClientRequest client_request;
-            util::SerializedData serialized_request = kv::serialize_request(request);
+            utils::SerializedData serialized_request = kv::serialize_request(request);
             client_request.key = request.key;
             client_request.request = serialized_request;
 
@@ -101,7 +101,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
             request.type = kv::RequestType::GET;
 
             loadbalancer::LBClientRequest client_request;
-            util::SerializedData serialized_request = kv::serialize_request(request);
+            utils::SerializedData serialized_request = kv::serialize_request(request);
             client_request.key = request.key;
             client_request.request = serialized_request;
 
@@ -121,7 +121,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
             request.type = kv::RequestType::GET;
 
             loadbalancer::LBClientRequest client_request;
-            util::SerializedData serialized_request = kv::serialize_request(request);
+            utils::SerializedData serialized_request = kv::serialize_request(request);
             client_request.key = request.key;
             client_request.request = serialized_request;
 
@@ -142,7 +142,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
 
 
             loadbalancer::LBClientRequest client_request;
-            util::SerializedData serialized_request = kv::serialize_request(request);
+            utils::SerializedData serialized_request = kv::serialize_request(request);
             client_request.key = request.key;
             client_request.request = serialized_request;
 
@@ -157,7 +157,7 @@ TEST(LoadBalancerTests, HandlesRequestRouting) {
             request.type = kv::RequestType::GET;
 
             loadbalancer::LBClientRequest client_request;
-            util::SerializedData serialized_request = kv::serialize_request(request);
+            utils::SerializedData serialized_request = kv::serialize_request(request);
             client_request.key = request.key;
             client_request.request = serialized_request;
 

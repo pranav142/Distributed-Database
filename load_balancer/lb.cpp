@@ -21,12 +21,12 @@ loadbalancer::LBClientResponse loadbalancer::LoadBalancer::process_request(const
     }
     m_logger->debug("Sending request (key: {}) to Cluster: {}", request.key, cluster_name.value());
 
-    gRPC_request.set_command(util::serialized_data_to_string(request.request));
+    gRPC_request.set_command(utils::serialized_data_to_string(request.request));
 
     for (int i = 0; i < MAX_TRIES; i++) {
         if (send_request_to_leader(cluster_name.value(), gRPC_request, &gRPC_response)) {
             lb_response.error_code = LBClientResponse::ErrorCode::SUCCESS;
-            lb_response.response = util::serialized_data_from_string(gRPC_response.data());
+            lb_response.response = utils::serialized_data_from_string(gRPC_response.data());
             return lb_response;
         }
         m_logger->warn("Failed to send request to leader trying again");
@@ -34,7 +34,7 @@ loadbalancer::LBClientResponse loadbalancer::LoadBalancer::process_request(const
     }
 
     lb_response.error_code = LBClientResponse::ErrorCode::INVALID_LEADER;
-    lb_response.response = util::serialized_data_from_string(gRPC_response.data());
+    lb_response.response = utils::serialized_data_from_string(gRPC_response.data());
     return lb_response;
 }
 

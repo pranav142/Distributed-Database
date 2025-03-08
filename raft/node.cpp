@@ -514,7 +514,7 @@ void raft::Node::update_commit_index(unsigned int commit_index) {
             m_logger->critical("Logs have been corrupted could not read log index: {}", i);
         }
 
-        fsm::FSMResponse response = m_fsm->apply_command(util::serialized_data_from_string(log.value().entry));
+        fsm::FSMResponse response = m_fsm->apply_command(utils::serialized_data_from_string(log.value().entry));
         if (response.error_code != fsm::FSMResponse::ErrorCode::SUCCESS) {
             m_logger->critical("Failed to apply command {}", log.value().entry);
 
@@ -670,7 +670,7 @@ void raft::Node::run_leader_loop() {
                         arg.callback(response);
                     }
                 } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
-                    util::SerializedData serialized_data = util::serialized_data_from_string(arg.command);
+                    utils::SerializedData serialized_data = utils::serialized_data_from_string(arg.command);
                     if (m_fsm->get_request_type(serialized_data) == fsm::RequestType::QUERY) {
                         ClientRequestResponse response{};
                         if (!valid_lease) {
@@ -689,7 +689,7 @@ void raft::Node::run_leader_loop() {
                             response.success = false;
                             response.leader_id = m_leader_id;
                             response.redirect = false;
-                            response.data = util::serialized_data_to_string(fsm_response.serialized_response);
+                            response.data = utils::serialized_data_to_string(fsm_response.serialized_response);
                             arg.callback(response);
                             return;
                         }
@@ -697,7 +697,7 @@ void raft::Node::run_leader_loop() {
                         response.success = true;
                         response.leader_id = m_leader_id;
                         response.redirect = false;
-                        response.data = util::serialized_data_to_string(fsm_response.serialized_response);
+                        response.data = utils::serialized_data_to_string(fsm_response.serialized_response);
                         arg.callback(response);
                         return;
                     }
