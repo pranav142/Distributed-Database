@@ -5,6 +5,18 @@
 #include "lb.h"
 #include "gRPC_client.h"
 
+void loadbalancer::LoadBalancer::run(unsigned short http_port) {
+    std::thread server_thread([this, http_port]() { m_http_server.run(http_port); });
+
+    if (server_thread.joinable()) {
+        server_thread.join();
+    }
+}
+
+void loadbalancer::LoadBalancer::stop() {
+    m_http_server.shutdown();
+}
+
 loadbalancer::LBClientResponse loadbalancer::LoadBalancer::process_request(const LBClientRequest &request) {
     raft_gRPC::ClientRequest gRPC_request;
     raft_gRPC::ClientResponse gRPC_response;

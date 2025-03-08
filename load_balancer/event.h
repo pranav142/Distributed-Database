@@ -2,10 +2,10 @@
 #define LOAD_BALANCER_EVENT_H_
 
 #include <functional>
+#include <variant>
 #include "serialized_data.h"
 
 namespace loadbalancer {
-
     struct LBClientRequest {
         // Key for request routing
         std::string key;
@@ -18,6 +18,7 @@ namespace loadbalancer {
             COULD_NOT_FIND_VALID_CLUSTER,
             INVALID_LEADER,
         } error_code;
+
         utils::SerializedData response;
 
         [[nodiscard]] std::string error_code_to_string() const {
@@ -36,8 +37,13 @@ namespace loadbalancer {
 
     struct HTTPRequestEvent {
         LBClientRequest request;
-        std::function<void(const LBClientResponse&)> callback;
+        std::function<void(const LBClientResponse &)> callback;
     };
+
+    struct QuitEvent {
+    };
+
+    typedef std::variant<HTTPRequestEvent, QuitEvent> RequestEvent;
 }
 
 #endif

@@ -231,22 +231,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2b692aa-01f0-4f43-9438-48bafc7d9a2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_tests/http_server_tests.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/load_balancer/http_server.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/load_balancer/http_server.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/FSM.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/FSM.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/command.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/command.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/command.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/command.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/db.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/db.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FSM/key_value/db.h" beforeDir="false" afterPath="$PROJECT_DIR$/FSM/key_value/db.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Google_tests/loadbalancer_tests/lb_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_tests/lb_tests.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Google_tests/loadbalancer_tests/http_server_tests.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Google_tests/loadbalancer_tests/http_server_tests.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/load_balancer/event.h" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/event.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/load_balancer/http_server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/http_server.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/load_balancer/http_server.h" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/http_server.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/load_balancer/lb.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/load_balancer/lb.h" beforeDir="false" afterPath="$PROJECT_DIR$/load_balancer/lb.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/raft/node.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/raft/node.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/serialized_data.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/utils/serialized_data.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/serialized_data.h" beforeDir="false" afterPath="$PROJECT_DIR$/utils/serialized_data.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -360,7 +351,7 @@
     "Google Test.GTest_util_run.executor": "Run",
     "Google Test.GTests_run.executor": "Run",
     "Google Test.GenerateRandomNumber.HandlesValidMinMax.executor": "Run",
-    "Google Test.HttpServerTests.ServerRuns.executor": "Debug",
+    "Google Test.HttpServerTests.ServerRuns.executor": "Run",
     "Google Test.KvDbTests.SetsValueTest.executor": "Run",
     "Google Test.LoadBalancerTests.HandlesRequestRouting.executor": "Run",
     "Google Test.PersistentStateAppendLog.HandlesValidLog.executor": "Run",
@@ -377,7 +368,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "ctest.advertisement.all.test.configuration.is.created": "true",
-    "git-widget-placeholder": "refactor",
+    "git-widget-placeholder": "main",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -1743,7 +1734,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/load_balancer/http_server.cpp</url>
-          <line>27</line>
+          <line>31</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>

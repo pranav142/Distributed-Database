@@ -14,6 +14,7 @@
 #include "consistent_hashing.h"
 #include "event_queue.h"
 #include "event.h"
+#include "http_server.h"
 
 namespace loadbalancer {
 
@@ -27,6 +28,10 @@ namespace loadbalancer {
         }
 
         ~LoadBalancer() = default;
+
+        void run(unsigned short http_port);
+
+        void stop();
 
         LBClientResponse process_request(const LBClientRequest &request);
     private:
@@ -48,7 +53,9 @@ namespace loadbalancer {
         utils::ConsistentHashing m_consistent_hash;
         std::unordered_map<std::string, std::string> m_leader_cache;
 
-        utils::EventQueue<HTTPRequestEvent> http_request_queue;
+        utils::EventQueue<RequestEvent> m_http_request_queue;
+
+        HTTPServer m_http_server = HTTPServer(m_http_request_queue);
     };
 }
 #endif //LB_H

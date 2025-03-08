@@ -9,6 +9,10 @@ void loadbalancer::HTTPServer::run(unsigned short port) {
     m_app.port(port).multithreaded().run();
 }
 
+void loadbalancer::HTTPServer::shutdown() {
+    m_app.stop();
+}
+
 void loadbalancer::HTTPServer::setup() {
     CROW_ROUTE(m_app, "/")([]() {
             return "HELLO WORLD";
@@ -34,6 +38,7 @@ void loadbalancer::HTTPServer::setup() {
         client_request.request =  utils::serialized_data_from_string(request);
 
         HTTPRequestEvent event;
+
         event.request = client_request;
         event.callback = [&cv, &http_response, &processed](const LBClientResponse &response) {
             http_response["error_code"] = response.error_code_to_string();

@@ -12,18 +12,20 @@
 namespace loadbalancer {
     class HTTPServer {
     public:
-       explicit HTTPServer(utils::EventQueue<HTTPRequestEvent> &event_queue) : m_request_queue(event_queue) {
+       explicit HTTPServer(utils::EventQueue<RequestEvent> &event_queue) : m_request_queue(event_queue) {
              setup();
        }
 
         void run(unsigned short port);
+
+        void shutdown();
 
     private:
         void setup();
 
     private:
         crow::SimpleApp m_app;
-        utils::EventQueue<HTTPRequestEvent> &m_request_queue;
+        utils::EventQueue<RequestEvent> &m_request_queue;
     };
 };
 
