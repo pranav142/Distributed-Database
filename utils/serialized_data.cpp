@@ -4,10 +4,10 @@
 
 #include "serialized_data.h"
 
-std::string util::serialized_data_to_string(const SerializedData& data) {
+std::string utils::serialized_data_to_string(const SerializedData& data) {
     return {data.begin(), data.end()} ;
 }
 
-util::SerializedData util::serialized_data_from_string(const std::string& data) {
+utils::SerializedData utils::serialized_data_from_string(const std::string& data) {
     return {data.begin(), data.end()};
 }

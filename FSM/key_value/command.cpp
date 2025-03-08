@@ -6,7 +6,7 @@
 #include <string>
 #include <sstream>
 
-util::SerializedData kv::serialize_request(const Request &request) {
+utils::SerializedData kv::serialize_request(const Request &request) {
     using json = nlohmann::json;
     json j;
 
@@ -17,7 +17,7 @@ util::SerializedData kv::serialize_request(const Request &request) {
     return json::to_ubjson(j);
 }
 
-std::optional<kv::Request> kv::deserialize_request(const util::SerializedData &serialized) {
+std::optional<kv::Request> kv::deserialize_request(const utils::SerializedData &serialized) {
     using json = nlohmann::json;
     json j = json::from_ubjson(serialized);
 
@@ -37,7 +37,7 @@ std::optional<kv::Request> kv::deserialize_request(const util::SerializedData &s
     };
 }
 
-util::SerializedData kv::serialize_response(const Response &response) {
+utils::SerializedData kv::serialize_response(const Response &response) {
     using json = nlohmann::json;
     json j;
 
@@ -47,7 +47,7 @@ util::SerializedData kv::serialize_response(const Response &response) {
     return json::to_ubjson(j);
 }
 
-std::optional<kv::Response> kv::deserialize_response(const util::SerializedData &serialized) {
+std::optional<kv::Response> kv::deserialize_response(const utils::SerializedData &serialized) {
     using json = nlohmann::json;
     json j = json::from_ubjson(serialized);
 

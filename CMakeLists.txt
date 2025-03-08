@@ -3,6 +3,7 @@ SET(CMAKE_CXX_COMPILER clang)
 project(db LANGUAGES CXX)
 
 find_package(TBB REQUIRED)
+find_package(Crow REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -97,6 +98,9 @@ set(LB_FILES
         load_balancer/lb.h
         load_balancer/gRPC_client.cpp
         load_balancer/gRPC_client.h
+        load_balancer/http_server.cpp
+        load_balancer/http_server.h
+        load_balancer/event.h
 )
 
 add_library(lb
@@ -107,9 +111,10 @@ target_include_directories(lb
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/Crow/include
 )
 
-target_link_libraries(lb PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils TBB::tbb)
+target_link_libraries(lb PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils TBB::tbb Crow::Crow)
 
 set(FSM_FILES
         FSM/key_value/db.cpp
@@ -202,6 +207,7 @@ target_include_directories(GTest_util_run
 
 add_executable(GTest_lb_run
         ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/loadbalancer_tests/lb_tests.cpp
+        Google_tests/loadbalancer_tests/http_server_tests.cpp
 )
 
 target_link_libraries(GTest_lb_run

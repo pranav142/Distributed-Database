@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace util {
+namespace utils {
     typedef std::vector<uint8_t> SerializedData;
 
     std::string serialized_data_to_string(const SerializedData& data);

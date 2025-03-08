@@ -28,13 +28,13 @@ namespace kv {
         std::string data;
     };
 
-    util::SerializedData serialize_request(const Request &request);
+    utils::SerializedData serialize_request(const Request &request);
 
-    std::optional<Request> deserialize_request(const util::SerializedData &serialized);
+    std::optional<Request> deserialize_request(const utils::SerializedData &serialized);
 
-    util::SerializedData serialize_response(const Response &response);
+    utils::SerializedData serialize_response(const Response &response);
 
-    std::optional<Response> deserialize_response(const util::SerializedData &serialized);
+    std::optional<Response> deserialize_response(const utils::SerializedData &serialized);
 
     std::optional<RequestType> command_type_from_str(const std::string &str);
 
