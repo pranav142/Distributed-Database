@@ -12,8 +12,24 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "consistent_hashing.h"
+#include "serialized_data.h"
 
 namespace loadbalancer {
+    struct LBClientRequest {
+        // Key for request routing
+        std::string key;
+        util::SerializedData request;
+    };
+
+    struct LBClientResponse {
+        enum class ErrorCode {
+            SUCCESS,
+            COULD_NOT_FIND_VALID_CLUSTER,
+            INVALID_LEADER,
+        } error_code;
+        util::SerializedData response;
+    };
+
     struct LBResponse {
         bool success;
         std::string data;
@@ -22,17 +38,15 @@ namespace loadbalancer {
     class LoadBalancer {
     public:
         explicit LoadBalancer(utils::Clusters clusters,
-                              std::function<std::optional<std::string>(const std::string &)> get_key,
                               unsigned int replicas) : m_clusters(std::move(clusters)),
                                                        m_logger(spdlog::stdout_color_mt("load balancer")),
-                                                       m_get_key(std::move(get_key)),
                                                        m_consistent_hash(replicas, utils::hasher) {
             initialize_clusters();
         }
 
         ~LoadBalancer() = default;
 
-        loadbalancer::LBResponse process_request(const std::string &serialized_command);
+        LBClientResponse process_request(const LBClientRequest &request);
 
     private:
         void initialize_clusters();
@@ -46,6 +60,7 @@ namespace loadbalancer {
                                     raft_gRPC::ClientResponse *response);
 
     private:
+        // cluster manager should store cluster mappings and
         utils::Clusters m_clusters;
         std::shared_ptr<spdlog::logger> m_logger;
 
@@ -54,9 +69,5 @@ namespace loadbalancer {
 
         std::unordered_map<std::string, std::string> m_leader_cache;
     };
-
-    bool command_request(const std::string &address,
-                         const raft_gRPC::ClientRequest &request,
-                         raft_gRPC::ClientResponse *response);
 }
 #endif //LB_H

@@ -499,9 +499,8 @@ void raft::Node::calculate_new_commit_index() {
 }
 
 void raft::Node::update_commit_index(unsigned int commit_index) {
-    raft::FSMResponse response;
     // commit index can only increase
-    // do not process indicies less than or
+    // do not process indices less than or
     // equal to ours
     if (m_commit_index >= commit_index) {
         return;
@@ -514,10 +513,13 @@ void raft::Node::update_commit_index(unsigned int commit_index) {
         if (log == std::nullopt) {
             m_logger->critical("Logs have been corrupted could not read log index: {}", i);
         }
-        response = m_fsm->apply_command(log.value().entry);
-        if (response.success == false) {
-            m_logger->critical("Failed to apply command {} to State Machine; Reason: {}", log.value().entry,
-                               response.data);
+
+        fsm::FSMResponse response = m_fsm->apply_command(util::serialized_data_from_string(log.value().entry));
+        if (response.error_code != fsm::FSMResponse::ErrorCode::SUCCESS) {
+            m_logger->critical("Failed to apply command {}", log.value().entry);
+
+            // stop if unable to apply command TODO: remove later?
+            assert(response.error_code == fsm::FSMResponse::ErrorCode::SUCCESS);
         }
     }
     m_last_applied_index = commit_index;
@@ -668,7 +670,8 @@ void raft::Node::run_leader_loop() {
                         arg.callback(response);
                     }
                 } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
-                    if (!m_fsm->is_modifying_command(arg.command)) {
+                    util::SerializedData serialized_data = util::serialized_data_from_string(arg.command);
+                    if (m_fsm->get_request_type(serialized_data) == fsm::RequestType::QUERY) {
                         ClientRequestResponse response{};
                         if (!valid_lease) {
                             m_logger->debug("Leader does not have a valid lease thus could not process read request");
@@ -680,13 +683,13 @@ void raft::Node::run_leader_loop() {
                             return;
                         }
 
-                        FSMResponse fsm_response = m_fsm->query_state(arg.command);
-                        if (!fsm_response.success) {
+                        fsm::FSMResponse fsm_response = m_fsm->query_state(serialized_data);
+                        if (fsm_response.error_code != fsm::FSMResponse::ErrorCode::SUCCESS) {
                             m_logger->debug("Could not query the state of FSM");
                             response.success = false;
                             response.leader_id = m_leader_id;
                             response.redirect = false;
-                            response.data = fsm_response.data;
+                            response.data = util::serialized_data_to_string(fsm_response.serialized_response);
                             arg.callback(response);
                             return;
                         }
@@ -694,7 +697,7 @@ void raft::Node::run_leader_loop() {
                         response.success = true;
                         response.leader_id = m_leader_id;
                         response.redirect = false;
-                        response.data = fsm_response.data;
+                        response.data = util::serialized_data_to_string(fsm_response.serialized_response);
                         arg.callback(response);
                         return;
                     }

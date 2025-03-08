@@ -10,7 +10,7 @@
 #include "gRPC_client.h"
 #include "logging.h"
 #include "lb.h"
-#include "Mock_FSM.h"
+#include "key_value/db.h"
 
 class MockClient final : public raft::Client {
 public:
@@ -50,7 +50,7 @@ TEST(ElectionTest, CoreElectionLogic) {
         {2, utils::NodeInfo{"0.0.0.0:4206"}},
     };
 
-    auto fsm = std::make_shared<MockFSM>();
+    auto fsm = std::make_shared<kv::DB>();
     raft::Node node(0, cluster_map, std::move(client), fsm);
 
     std::thread stop_thread([&node]() {
@@ -94,7 +94,8 @@ TEST(ElectionTest, RequestVoteTest) {
                             });
     });
 
-    auto fsm = std::make_shared<MockFSM>();
+
+    auto fsm = std::make_shared<kv::DB>();
     raft::Node node(0, cluster_map, std::move(n_client), std::move(fsm));
 
     std::thread stop_thread([&node]() {
@@ -126,7 +127,8 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     };
 
     // this node will time out at the max election time
-    auto fsm1 = std::make_shared<MockFSM>();
+
+    auto fsm1 = std::make_shared<kv::DB>();
     raft::TimerSettings timer_settings;
     timer_settings.election_timer_max_ms = raft::ELECTION_TIMER_MAX_MS;
     timer_settings.election_timer_min_ms = raft::ELECTION_TIMER_MAX_MS;
@@ -137,12 +139,12 @@ TEST(ElectionTest, NodeLogReplicationTest) {
     timer_settings.election_timer_max_ms = raft::ELECTION_TIMER_MIN_MS;
     timer_settings.election_timer_min_ms = raft::ELECTION_TIMER_MIN_MS;
 
-    auto fsm2 = std::make_shared<MockFSM>();
+    auto fsm2 = std::make_shared<kv::DB>();
     raft::Node node_2(1, cluster_map, std::move(client2), fsm2, timer_settings);
     node_2.set_current_term(6);
 
 
-    auto fsm3 = std::make_shared<MockFSM>();
+    auto fsm3 = std::make_shared<kv::DB>();
     raft::Node node_3(2, cluster_map, std::move(client3), fsm3, timer_settings);
     node_3.set_current_term(6);
 
@@ -151,12 +153,12 @@ TEST(ElectionTest, NodeLogReplicationTest) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * raft::ELECTION_TIMER_MAX_MS));
         for (int i = 0; i < 10; i++) {
             raft_gRPC::ClientRequest request;
-            db::Command command;
+            kv::Request command;
             command.key = "x";
-            command.type = db::CommandType::SET;
+            command.type = kv::RequestType::SET;
             command.value = std::to_string(i);
-            db::serialize_command(command);
-            request.set_command(db::serialize_command(command));
+            std::string req = util::serialized_data_to_string(kv::serialize_request(command));
+            request.set_command(req);
 
             raft_gRPC::ClientResponse response;
 
@@ -165,6 +167,7 @@ TEST(ElectionTest, NodeLogReplicationTest) {
             auto end = std::chrono::high_resolution_clock::now();
             average_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         }
+
         average_time_ms /= 10.0;
         std::this_thread::sleep_for(std::chrono::milliseconds(2 * raft::ELECTION_TIMER_MAX_MS));
         node_1.cancel();
@@ -224,7 +227,7 @@ TEST(ElectionTest, HandlesOfflineNodesTest) {
     // this node will time out last but should still end up as the leader
     // by setting the min and max election time to same value
     // we set exactly how frequently the node will be timing out
-    auto fsm = std::make_shared<MockFSM>();
+    auto fsm = std::make_shared<kv::DB>();
     raft::Node node_1(1, cluster_map, std::move(client1), std::move(fsm));
     node_1.set_current_term(10);
 

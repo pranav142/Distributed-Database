@@ -39,7 +39,7 @@ namespace raft {
     class Node {
     public:
         Node(unsigned int id, const utils::ClusterMap &cluster,
-             std::unique_ptr<Client> client, std::shared_ptr<FSM> fsm,
+             std::unique_ptr<Client> client, std::shared_ptr<fsm::FSM> fsm,
              TimerSettings timer_settings = {})
             : m_id(id),
               m_state("log_" + std::to_string(id) + ".txt"),
@@ -174,7 +174,7 @@ namespace raft {
 
         std::vector<PendingRequest> m_pending_requests;
 
-        std::shared_ptr<FSM> m_fsm;
+        std::shared_ptr<fsm::FSM> m_fsm;
     };
 
     std::string server_state_to_str(ServerState state);

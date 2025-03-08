@@ -51,7 +51,6 @@ set(RAFT_FILES
         raft/gRPC_server.cpp
         raft/gRPC_server.h
         raft/client.cpp
-        raft/FSM.h
 )
 
 set(UTIL_FILES
@@ -63,6 +62,8 @@ set(UTIL_FILES
         utils/cluster.h
         utils/consistent_hashing.cpp
         utils/consistent_hashing.h
+        utils/serialized_data.cpp
+        utils/serialized_data.h
 )
 
 add_library(utils
@@ -86,13 +87,16 @@ target_include_directories(raft
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/spdlog/include
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
 )
 
-target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils)
+target_link_libraries(raft PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils fsm)
 
 set(LB_FILES
         load_balancer/lb.cpp
         load_balancer/lb.h
+        load_balancer/gRPC_client.cpp
+        load_balancer/gRPC_client.h
 )
 
 add_library(lb
@@ -107,22 +111,25 @@ target_include_directories(lb
 
 target_link_libraries(lb PUBLIC protolib grpc++ spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32> utils TBB::tbb)
 
-set(DB_FILES
-        db/db.cpp
-        db/db.h
-        db/command.cpp
-        db/command.h
+set(FSM_FILES
+        FSM/key_value/db.cpp
+        FSM/key_value/db.h
+        FSM/key_value/command.cpp
+        FSM/key_value/command.h
+        FSM/FSM.h
 )
 
-add_library(db
-        ${DB_FILES}
+add_library(fsm
+        ${FSM_FILES}
 )
 
-target_include_directories(db PRIVATE
+target_include_directories(fsm PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/json/single_include
 )
 
-target_link_libraries(db PRIVATE utils)
+target_link_libraries(fsm PUBLIC utils)
 
 add_executable(main
         main.cpp
@@ -141,38 +148,77 @@ target_include_directories(main
 
 enable_testing()
 
-add_executable(GTests_run
-        Google_tests/raft_logs_tests.cpp
-        Google_tests/raft_utils_tests.cpp
-        Google_tests/raft_persistent_state_tests.cpp
-        Google_tests/raft_event_queue_tests.cpp
-        Google_tests/raft_node_tests.cpp
-        Google_tests/db_command_tests.cpp
-        Google_tests/db_tests.cpp
-        Google_tests/utils_consistent_hashing_tests.cpp
-        Google_tests/loadbalancer_lb_tests.cpp
-        Google_tests/Mock_FSM.h
+add_executable(GTest_FSM_run
+        Google_tests/FSM_tests/kv_command_tests.cpp
+        Google_tests/FSM_tests/kv_db_tests.cpp
 )
 
-target_link_libraries(GTests_run
+target_link_libraries(GTest_FSM_run
+        PRIVATE
+        fsm
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_FSM_run
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/FSM
+)
+
+add_executable(GTest_raft_run
+        Google_tests/raft_tests/raft_logs_tests.cpp
+        Google_tests/raft_tests/raft_node_tests.cpp
+        Google_tests/raft_tests/raft_persistent_state_tests.cpp
+        Google_tests/raft_tests/raft_utils_tests.cpp
+)
+
+target_link_libraries(GTest_raft_run
         PRIVATE
         raft
         lb
-        db
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_raft_run
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/raft
+        ${CMAKE_CURRENT_SOURCE_DIR}/load_balancer
+)
+
+add_executable(GTest_util_run
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/util_tests/util_consistent_hashing_tests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/util_tests/util_event_queue_tests.cpp
+)
+
+target_link_libraries(GTest_util_run
+        PRIVATE
         utils
         GTest::gtest_main
 )
 
-target_include_directories(GTests_run
+target_include_directories(GTest_util_run
         PRIVATE
-        # ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
-        # ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
-        raft
-        load_balancer
         utils
-        db
-        TBB::tbb
+)
+
+add_executable(GTest_lb_run
+        ${CMAKE_CURRENT_SOURCE_DIR}/Google_tests/loadbalancer_tests/lb_tests.cpp
+)
+
+target_link_libraries(GTest_lb_run
+        PRIVATE
+        lb
+        fsm
+        raft
+        GTest::gtest_main
+)
+
+target_include_directories(GTest_lb_run
+        PRIVATE
+        load_balancer
+        FSM
+        raft
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 include(GoogleTest)
-gtest_discover_tests(GTests_run)
+gtest_discover_tests(GTest_raft_run GTest_FSM_run GTest_util_run)
