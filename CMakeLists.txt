@@ -144,12 +144,15 @@ add_executable(main
 target_link_libraries(main
         PRIVATE
         raft
+        lb
+        fsm
 )
 
 target_include_directories(main
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/asio/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/httplib
+        ${CMAKE_CURRENT_SOURCE_DIR}/raft
 )
 
 enable_testing()

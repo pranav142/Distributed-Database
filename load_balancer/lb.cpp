@@ -36,7 +36,7 @@ void loadbalancer::LoadBalancer::run(unsigned short http_port) {
 
 void loadbalancer::LoadBalancer::shutdown() {
     m_http_server.shutdown();
-    
+
     m_http_request_queue.push(QuitEvent{});
 }
 
