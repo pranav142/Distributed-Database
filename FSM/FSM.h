@@ -39,6 +39,8 @@ namespace fsm {
 
         virtual std::optional<RequestType> get_request_type(const utils::SerializedData& serialized_request) = 0;
 
+        virtual bool is_valid_request(const utils::SerializedData& serialized_command) = 0;
+
         // TODO add functionality to turn requests into LOGs that can be appended
 
         // TODO add functionality to apply logs

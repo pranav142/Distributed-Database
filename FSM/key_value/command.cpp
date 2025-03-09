@@ -7,57 +7,70 @@
 #include <sstream>
 
 utils::SerializedData kv::serialize_request(const Request &request) {
-    using json = nlohmann::json;
-    json j;
+    // Format: TYPE|KEY|VALUE
+    std::string serialized = command_type_to_str(request.type) + "|" +
+                             request.key + "|" +
+                             (request.value.empty() ? "null" : request.value);
 
-    j["type"] = command_type_to_str(request.type);
-    j["key"] = request.key;
-    j["value"] = request.value.empty() ? "null" : request.value;
-
-    return json::to_ubjson(j);
+    return {serialized.begin(), serialized.end()};
 }
 
 std::optional<kv::Request> kv::deserialize_request(const utils::SerializedData &serialized) {
-    using json = nlohmann::json;
-    json j = json::from_ubjson(serialized);
+    std::string data_str(serialized.begin(), serialized.end());
 
-    if (!j.contains("type") || !j.contains("key") || !j.contains("value")) {
+    std::vector<std::string> parts;
+    size_t pos = 0;
+    size_t prev_pos = 0;
+
+    while ((pos = data_str.find('|', prev_pos)) != std::string::npos) {
+        parts.push_back(data_str.substr(prev_pos, pos - prev_pos));
+        prev_pos = pos + 1;
+    }
+    parts.push_back(data_str.substr(prev_pos));
+
+    if (parts.size() != 3) {
         return std::nullopt;
     }
 
-    std::optional<RequestType> type = command_type_from_str(j.at("type"));
+    std::optional<RequestType> type = command_type_from_str(parts[0]);
     if (!type.has_value()) {
         return std::nullopt;
     }
 
+    std::string key = parts[1];
+    std::string value = (parts[2] == "null") ? "" : parts[2];
+
     return Request{
         .type = type.value(),
-        .key = j.at("key"),
-        .value = j.at("value")
+        .key = key,
+        .value = value
     };
 }
 
 utils::SerializedData kv::serialize_response(const Response &response) {
-    using json = nlohmann::json;
-    json j;
+    // Format: SUCCESS|DATA
+    std::string serialized = (std::to_string(response.success)) + "|" +
+                            (response.data.empty() ? "null" : response.data);
 
-    j["data"] = response.data.empty() ? "null" : response.data;
-    j["success"] = response.success;
-
-    return json::to_ubjson(j);
+    return {serialized.begin(), serialized.end()};
 }
 
 std::optional<kv::Response> kv::deserialize_response(const utils::SerializedData &serialized) {
-    using json = nlohmann::json;
-    json j = json::from_ubjson(serialized);
+    std::string data_str(serialized.begin(), serialized.end());
 
-    if (!j.contains("data") || !j.contains("success")) {
+    size_t pos = data_str.find('|');
+    if (pos == std::string::npos) {
         return std::nullopt;
     }
 
+    std::string success_str = data_str.substr(0, pos);
+    std::string data = data_str.substr(pos + 1);
+
+    bool success = (success_str == "1");
+
     return Response{
-        .success = j.at("success"),
-        .data = j.at("data"),
+        .success = success,
+        .data = data
     };
 }
 

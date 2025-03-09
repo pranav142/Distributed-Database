@@ -6,15 +6,42 @@
 #include "gRPC_client.h"
 
 void loadbalancer::LoadBalancer::run(unsigned short http_port) {
+    m_is_running = true;
+
     std::thread server_thread([this, http_port]() { m_http_server.run(http_port); });
+
+    std::thread event_thread([this]() {
+        while (m_is_running) {
+            RequestEvent event = m_http_request_queue.pop();
+            std::visit([this](auto &&arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, HTTPRequestEvent>) {
+                    LBClientResponse response = process_request(arg.request);
+                    arg.callback(response);
+                } else if constexpr (std::is_same_v<T, QuitEvent>) {
+                    stop();
+                }
+            }, event);
+        }
+    });
+
+    if (event_thread.joinable()) {
+        event_thread.join();
+    }
 
     if (server_thread.joinable()) {
         server_thread.join();
     }
 }
 
-void loadbalancer::LoadBalancer::stop() {
+void loadbalancer::LoadBalancer::shutdown() {
     m_http_server.shutdown();
+    
+    m_http_request_queue.push(QuitEvent{});
+}
+
+void loadbalancer::LoadBalancer::stop() {
+    m_is_running = false;
 }
 
 loadbalancer::LBClientResponse loadbalancer::LoadBalancer::process_request(const LBClientRequest &request) {
@@ -92,6 +119,10 @@ bool loadbalancer::LoadBalancer::send_request_to_leader(const std::string &shard
                 break;
             }
         }
+    }
+
+    if (!leader_address.has_value()) {
+        return false;
     }
 
     success = send_request_grpc(leader_address.value(), request, response);

@@ -671,13 +671,23 @@ void raft::Node::run_leader_loop() {
                     }
                 } else if constexpr (std::is_same_v<T, ClientRequestEvent>) {
                     utils::SerializedData serialized_data = utils::serialized_data_from_string(arg.command);
+                    if (!m_fsm->is_valid_request(serialized_data)) {
+                        ClientRequestResponse response{};
+                        response.success = false;
+                        response.leader_id = m_leader_id;
+                        response.redirect = true;
+                        response.data = "Invalid Request Data";
+                        arg.callback(response);
+                        return;
+                    }
+
                     if (m_fsm->get_request_type(serialized_data) == fsm::RequestType::QUERY) {
                         ClientRequestResponse response{};
                         if (!valid_lease) {
                             m_logger->debug("Leader does not have a valid lease thus could not process read request");
                             response.success = false;
                             response.leader_id = m_leader_id;
-                            response.redirect = false;
+                            response.redirect = true;
                             response.data = "Could not handle read request due to invalid lease";
                             arg.callback(response);
                             return;
@@ -688,7 +698,7 @@ void raft::Node::run_leader_loop() {
                             m_logger->debug("Could not query the state of FSM");
                             response.success = false;
                             response.leader_id = m_leader_id;
-                            response.redirect = false;
+                            response.redirect = true;
                             response.data = utils::serialized_data_to_string(fsm_response.serialized_response);
                             arg.callback(response);
                             return;
@@ -706,7 +716,7 @@ void raft::Node::run_leader_loop() {
                         m_logger->warn("Failed to take clients request and append log");
                         ClientRequestResponse response{};
                         response.success = false;
-                        response.redirect = false;
+                        response.redirect = true;
                         response.leader_id = m_leader_id;
                         arg.callback(response);
                         return;

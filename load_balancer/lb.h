@@ -16,6 +16,8 @@
 #include "event.h"
 #include "http_server.h"
 
+// TODO: Bring in the HTTP server
+// TODO: Work on implementing request handling
 namespace loadbalancer {
 
     class LoadBalancer {
@@ -31,10 +33,12 @@ namespace loadbalancer {
 
         void run(unsigned short http_port);
 
-        void stop();
+        void shutdown();
 
         LBClientResponse process_request(const LBClientRequest &request);
     private:
+        void stop();
+
         void initialize_clusters();
 
         void update_leader_cache(const std::string &shard, const std::string &leader_address);
@@ -56,6 +60,7 @@ namespace loadbalancer {
         utils::EventQueue<RequestEvent> m_http_request_queue;
 
         HTTPServer m_http_server = HTTPServer(m_http_request_queue);
+        bool m_is_running = false;
     };
 }
 #endif //LB_H

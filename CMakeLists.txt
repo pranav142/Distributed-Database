@@ -4,6 +4,7 @@ project(db LANGUAGES CXX)
 
 find_package(TBB REQUIRED)
 find_package(Crow REQUIRED)
+find_package(CURL REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -215,6 +216,7 @@ target_link_libraries(GTest_lb_run
         lb
         fsm
         raft
+        CURL::libcurl
         GTest::gtest_main
 )
 

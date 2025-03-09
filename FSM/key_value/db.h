@@ -22,6 +22,8 @@ namespace kv {
         fsm::FSMResponse query_state(const utils::SerializedData &serialized_query) override;
 
         std::optional<fsm::RequestType> get_request_type(const utils::SerializedData &serialized_request) override;
+
+        bool is_valid_request(const utils::SerializedData &serialized_request) override;
     private:
         Response process_command(const Request &request);
 

@@ -81,6 +81,7 @@ void raft::gRPCServer::ClientRequestCallData::proceed() {
             m_status = FINISH;
             m_reply.set_success(_response.success);
             m_reply.set_leader_id(_response.leader_id);
+            m_reply.set_redirect(_response.redirect);
             m_reply.set_data(_response.data);
             m_responder.Finish(m_reply, grpc::Status::OK, this);
         };

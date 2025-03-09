@@ -67,6 +67,11 @@ std::optional<fsm::RequestType> kv::DB::get_request_type(const utils::Serialized
     }
 }
 
+bool kv::DB::is_valid_request(const utils::SerializedData &serialized_request) {
+    std::optional<Request> req = deserialize_request(serialized_request);
+    return req.has_value();
+}
+
 kv::Response kv::DB::process_command(const Request &request) {
     std::lock_guard lock(m_mtx);
 
